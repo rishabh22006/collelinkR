@@ -1,5 +1,5 @@
 
-import { EventProps } from '@/components/events/EventCard';
+import { Event } from '@/hooks/useEvents';
 
 const generateRandomDate = (start: Date, end: Date) => {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -17,7 +17,20 @@ const categories = ['Hackathons', 'Workshops', 'Fests', 'Social', 'Sports', 'Aca
 const organizers = ['Tech Club', 'Student Council', 'Cultural Committee', 'Sports Committee', 'Academic Society'];
 const locations = ['Main Auditorium', 'Sports Ground', 'Lecture Hall A', 'Campus Center', 'Engineering Block'];
 
-export const mockEvents: EventProps[] = [
+export interface MockEventProps {
+  id: string;
+  title: string;
+  date: Date;
+  location: string;
+  category: string;
+  attendees: number;
+  organizer: string;
+  isLive?: boolean;
+  isFeatured?: boolean;
+  imageUrl?: string;
+}
+
+export const mockEvents: MockEventProps[] = [
   {
     id: '1',
     title: 'Annual Tech Hackathon',

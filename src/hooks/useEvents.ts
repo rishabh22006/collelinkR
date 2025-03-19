@@ -141,18 +141,18 @@ export const useEvents = () => {
 
 // Hook to get user's registration status for an event
 export const useEventRegistration = (eventId: string) => {
-  const { data: session } = supabase.auth.getSession();
-  
   return useQuery({
     queryKey: ['eventRegistration', eventId],
     queryFn: async () => {
-      if (!session) return null;
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData?.session) return null;
       
       const { data, error } = await supabase
         .from('event_attendees')
         .select('*')
         .eq('event_id', eventId)
-        .eq('attendee_id', session.session?.user.id)
+        .eq('attendee_id', sessionData.session.user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
@@ -161,6 +161,6 @@ export const useEventRegistration = (eventId: string) => {
 
       return data as EventAttendee | null;
     },
-    enabled: !!session && !!eventId,
+    enabled: !!eventId,
   });
 };
