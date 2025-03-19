@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/authStore';
+import { Separator } from '@/components/ui/separator';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -76,7 +77,7 @@ const Auth = () => {
       email: '',
       password: '',
       displayName: '',
-      institution: '',
+      institution: 'MIT ADT University',
     },
   });
 
@@ -104,6 +105,32 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            prompt: 'select_account',
+          },
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        toast.error('Google login failed', {
+          description: error.message,
+        });
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
     try {
       setIsLoading(true);
@@ -113,7 +140,7 @@ const Auth = () => {
         options: {
           data: {
             display_name: values.displayName,
-            institution: values.institution,
+            institution: values.institution || 'MIT ADT University',
           },
         },
       });
@@ -151,7 +178,7 @@ const Auth = () => {
         <div className="text-center mb-8">
           <Logo size="lg" className="mx-auto mb-4" />
           <h1 className="text-2xl font-bold">Welcome to ColleLink</h1>
-          <p className="text-muted-foreground mt-2">Connect with your campus community</p>
+          <p className="text-muted-foreground mt-2">Connect with your MIT ADT University campus community</p>
         </div>
 
         <div className="bg-card rounded-xl shadow-lg border border-border p-6">
@@ -201,6 +228,29 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Logging in...' : 'Login'}
                   </Button>
+                  
+                  <div className="relative my-4">
+                    <Separator />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15.5453 6.54545H8.00001V9.63636H12.3093C11.9502 11.6 10.2047 12.7273 8.00001 12.7273C5.38183 12.7273 3.27274 10.6182 3.27274 8C3.27274 5.38182 5.38183 3.27273 8.00001 3.27273C9.2411 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00001 0C3.58183 0 0 3.58182 0 8C0 12.4182 3.58183 16 8.00001 16C12.0502 16 15.2729 13.0909 15.2729 8C15.2729 7.52727 15.5453 6.54545 15.5453 6.54545Z" fill="#FFC107"/>
+                      <path d="M0.89093 4.27273L3.58184 6.30909C4.28912 4.58182 5.9891 3.27273 8.00002 3.27273C9.24112 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00002 0C4.89093 0 2.10911 1.72727 0.89093 4.27273Z" fill="#FF3D00"/>
+                      <path d="M8.00001 16C10.1182 16 12.0045 15.1636 13.4227 13.8636L10.8727 11.7273C10.0773 12.3091 9.09093 12.7273 8.00001 12.7273C5.8091 12.7273 3.9091 11.6 3.54547 10.0182L0.836374 12.0727C2.03638 14.4909 4.83638 16 8.00001 16Z" fill="#4CAF50"/>
+                      <path d="M15.5452 6.54545H8V9.63636H12.3091C12.1408 10.5455 11.6409 11.3273 10.9454 11.9273L10.9682 11.9091L13.5182 14.0455C13.3636 14.1818 15.2727 12.5455 15.2727 8C15.2727 7.52727 15.5452 6.54545 15.5452 6.54545Z" fill="#1976D2"/>
+                    </svg>
+                    Continue with Google
+                  </Button>
                 </form>
               </Form>
             </TabsContent>
@@ -217,7 +267,7 @@ const Auth = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="you@example.com" className="pl-10" {...field} />
+                            <Input placeholder="you@mituniversity.edu.in" className="pl-10" {...field} />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -247,9 +297,9 @@ const Auth = () => {
                     name="institution"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Institution (Optional)</FormLabel>
+                        <FormLabel>Institution</FormLabel>
                         <FormControl>
-                          <Input placeholder="Your university or college" {...field} />
+                          <Input value="MIT ADT University" readOnly {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -275,6 +325,29 @@ const Auth = () => {
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Sign Up'}
+                  </Button>
+                  
+                  <div className="relative my-4">
+                    <Separator />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15.5453 6.54545H8.00001V9.63636H12.3093C11.9502 11.6 10.2047 12.7273 8.00001 12.7273C5.38183 12.7273 3.27274 10.6182 3.27274 8C3.27274 5.38182 5.38183 3.27273 8.00001 3.27273C9.2411 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00001 0C3.58183 0 0 3.58182 0 8C0 12.4182 3.58183 16 8.00001 16C12.0502 16 15.2729 13.0909 15.2729 8C15.2729 7.52727 15.5453 6.54545 15.5453 6.54545Z" fill="#FFC107"/>
+                      <path d="M0.89093 4.27273L3.58184 6.30909C4.28912 4.58182 5.9891 3.27273 8.00002 3.27273C9.24112 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00002 0C4.89093 0 2.10911 1.72727 0.89093 4.27273Z" fill="#FF3D00"/>
+                      <path d="M8.00001 16C10.1182 16 12.0045 15.1636 13.4227 13.8636L10.8727 11.7273C10.0773 12.3091 9.09093 12.7273 8.00001 12.7273C5.8091 12.7273 3.9091 11.6 3.54547 10.0182L0.836374 12.0727C2.03638 14.4909 4.83638 16 8.00001 16Z" fill="#4CAF50"/>
+                      <path d="M15.5452 6.54545H8V9.63636H12.3091C12.1408 10.5455 11.6409 11.3273 10.9454 11.9273L10.9682 11.9091L13.5182 14.0455C13.3636 14.1818 15.2727 12.5455 15.2727 8C15.2727 7.52727 15.5452 6.54545 15.5452 6.54545Z" fill="#1976D2"/>
+                    </svg>
+                    Continue with Google
                   </Button>
                 </form>
               </Form>
