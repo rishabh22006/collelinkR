@@ -1,48 +1,56 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { CalendarDays, Clock, MapPin, User, Users, ChevronRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import CustomBadge from '../ui/CustomBadge';
 import { Button } from '@/components/ui/button';
-
-export interface EventProps {
-  id: string;
-  title: string;
-  date: Date;
-  location: string;
-  category: string;
-  attendees: number;
-  organizer: string;
-  isLive?: boolean;
-  isFeatured?: boolean;
-  imageUrl?: string;
-}
+import { Event, useEventRegistration } from '@/hooks/useEvents';
+import { useAuthStore } from '@/stores/authStore';
+import { useNavigate } from 'react-router-dom';
 
 interface EventCardProps {
-  event: EventProps;
+  event: Event;
   variant?: 'default' | 'featured';
   className?: string;
+  onRegister: (eventId: string) => void;
+  attendeeCount?: number;
 }
 
 const EventCard = ({ 
   event, 
   variant = 'default',
-  className
+  className,
+  onRegister,
+  attendeeCount = 0
 }: EventCardProps) => {
-  const [isRegistered, setIsRegistered] = useState(false);
-  const isFeatured = variant === 'featured' || event.isFeatured;
+  const { session } = useAuthStore();
+  const navigate = useNavigate();
+  const { data: registration, isLoading: registrationLoading } = useEventRegistration(event.id);
+  const isRegistered = !!registration;
+  const isFeatured = variant === 'featured' || event.is_featured;
   
   const handleRegister = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    setIsRegistered(true);
-    toast.success(`Registered for ${event.title}!`, {
-      description: `You'll receive updates about this event.`,
-    });
+    if (!session) {
+      toast.error('Authentication required', {
+        description: 'Please login to register for events',
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/auth'),
+        },
+      });
+      return;
+    }
+    
+    onRegister(event.id);
   };
+
+  const isLive = new Date(event.date) <= new Date() && 
+    (!event.end_date || new Date(event.end_date) >= new Date());
 
   return (
     <div 
@@ -58,13 +66,13 @@ const EventCard = ({
           isFeatured ? "md:w-1/2 h-48 md:h-full" : "h-48"
         )}
       >
-        {event.imageUrl ? (
+        {event.image_url ? (
           <div 
             className="blur-load w-full h-full" 
-            style={{ backgroundImage: `url(${event.imageUrl}?blur=20)` }}
+            style={{ backgroundImage: `url(${event.image_url}?blur=20)` }}
           >
             <img 
-              src={event.imageUrl} 
+              src={event.image_url} 
               alt={event.title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               onLoad={(e) => e.currentTarget.parentElement?.classList.add('loaded')}
@@ -76,7 +84,7 @@ const EventCard = ({
           </div>
         )}
         
-        {event.isLive && (
+        {isLive && (
           <div className="absolute top-3 left-3 z-10">
             <CustomBadge variant="live" size="md">
               <span className="mr-1">●</span> LIVE NOW
@@ -112,27 +120,29 @@ const EventCard = ({
           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
             <div className="flex items-center">
               <CalendarDays size={14} className="mr-2" />
-              <span>{format(event.date, 'EEEE, MMMM do')}</span>
+              <span>{format(parseISO(event.date), 'EEEE, MMMM do')}</span>
             </div>
             
             <div className="flex items-center">
               <Clock size={14} className="mr-2" />
-              <span>{format(event.date, 'h:mm a')}</span>
+              <span>{format(parseISO(event.date), 'h:mm a')}</span>
             </div>
             
-            <div className="flex items-center">
-              <MapPin size={14} className="mr-2" />
-              <span>{event.location}</span>
-            </div>
+            {event.location && (
+              <div className="flex items-center">
+                <MapPin size={14} className="mr-2" />
+                <span>{event.location}</span>
+              </div>
+            )}
             
             <div className="flex items-center">
               <Users size={14} className="mr-2" />
-              <span>{event.attendees} attendees</span>
+              <span>{attendeeCount} attendees</span>
             </div>
             
             <div className="flex items-center">
               <User size={14} className="mr-2" />
-              <span>By {event.organizer}</span>
+              <span>By {event.host_id ? 'Host' : 'ColleLink'}</span>
             </div>
           </div>
         </div>
@@ -146,9 +156,9 @@ const EventCard = ({
               isRegistered ? "opacity-70" : ""
             )}
             onClick={handleRegister}
-            disabled={isRegistered}
+            disabled={isRegistered || registrationLoading}
           >
-            {isRegistered ? "Registered" : "Register"}
+            {registrationLoading ? "Loading..." : isRegistered ? "Registered" : "Register"}
           </Button>
           
           <ChevronRight size={18} className="text-muted-foreground/50 transition-all duration-300 group-hover:translate-x-1" />

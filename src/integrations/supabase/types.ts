@@ -9,16 +9,574 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          media_urls: string[] | null
+          post_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          post_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          post_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communities: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          creator_id: string | null
+          description: string | null
+          id: string
+          is_private: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          creator_id?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          logo_url?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          creator_id?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          logo_url?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communities_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          id: string
+          joined_at: string
+          member_id: string
+          role: string
+        }
+        Insert: {
+          community_id: string
+          id?: string
+          joined_at?: string
+          member_id: string
+          role: string
+        }
+        Update: {
+          community_id?: string
+          id?: string
+          joined_at?: string
+          member_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_attendees: {
+        Row: {
+          attendee_id: string
+          event_id: string
+          id: string
+          registered_at: string
+          status: string
+        }
+        Insert: {
+          attendee_id: string
+          event_id: string
+          id?: string
+          registered_at?: string
+          status: string
+        }
+        Update: {
+          attendee_id?: string
+          event_id?: string
+          id?: string
+          registered_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendees_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          category: string
+          community_id: string | null
+          created_at: string
+          date: string
+          description: string | null
+          end_date: string | null
+          host_id: string | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          location: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          community_id?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          end_date?: string | null
+          host_id?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          location?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          community_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          end_date?: string | null
+          host_id?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          location?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chat_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          member_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          member_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chat_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          media_urls: string[] | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          media_urls?: string[] | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          media_urls?: string[] | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chat_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chats: {
+        Row: {
+          community_id: string | null
+          created_at: string
+          creator_id: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          community_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          community_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chats_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chats_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      likes: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          media_urls: string[] | null
+          read: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          media_urls?: string[] | null
+          read?: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          media_urls?: string[] | null
+          read?: boolean | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          comments_count: number | null
+          community_id: string | null
+          content: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          media_urls: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          comments_count?: number | null
+          community_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          comments_count?: number | null
+          community_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          display_name: string
+          email: string
+          id: string
+          institution: string | null
+          joined_at: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          display_name: string
+          email: string
+          id: string
+          institution?: string | null
+          joined_at?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          institution?: string | null
+          joined_at?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_message_read_only_update: {
+        Args: {
+          content_old: string
+          content_new: string
+          media_urls_old: string[]
+          media_urls_new: string[]
+        }
+        Returns: boolean
+      }
+      get_user_role: {
+        Args: {
+          user_id: string
+        }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_community_admin: {
+        Args: {
+          community_uuid: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
+      is_group_chat_member: {
+        Args: {
+          group_uuid: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never

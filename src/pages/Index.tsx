@@ -1,12 +1,17 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { LogIn, UserPlus } from 'lucide-react';
 import Logo from '@/components/shared/Logo';
 import EventList from '@/components/events/EventList';
 import BottomNavbar from '@/components/layout/BottomNavbar';
-import { mockEvents } from '@/utils/mockData';
+import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/authStore';
 
 const Index = () => {
+  const { session, profile, signOut } = useAuthStore();
+
   useEffect(() => {
     // When component mounts, apply a fade-in animation to the body
     document.body.style.opacity = '0';
@@ -47,11 +52,32 @@ const Index = () => {
         <div className="container py-4 flex justify-between items-center">
           <Logo />
           <div className="flex items-center gap-2">
-            <button className="btn-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-              </svg>
-            </button>
+            {session ? (
+              <div className="flex items-center gap-3">
+                <div className="text-sm hidden md:block">
+                  <span className="text-muted-foreground">Hello, </span>
+                  <span className="font-medium">{profile?.display_name || 'User'}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => signOut()}>
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/auth">
+                    <LogIn className="w-4 h-4 mr-1" /> 
+                    Login
+                  </Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link to="/auth?tab=signup">
+                    <UserPlus className="w-4 h-4 mr-1" /> 
+                    Sign Up
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -63,12 +89,12 @@ const Index = () => {
         animate="visible"
       >
         <motion.section variants={itemVariants}>
-          <h1 className="text-3xl font-bold mb-2">Welcome to Campuscore</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome to ColleLink</h1>
           <p className="text-muted-foreground">Discover events, connect with peers, and build your college community.</p>
         </motion.section>
 
         <motion.section variants={itemVariants}>
-          <EventList events={mockEvents} />
+          <EventList />
         </motion.section>
       </motion.main>
 

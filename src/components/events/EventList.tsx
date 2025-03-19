@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
-import EventCard, { EventProps } from './EventCard';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import CustomBadge from '../ui/CustomBadge';
+import EventCard from './EventCard';
+import { useEvents } from '@/hooks/useEvents';
+import { Loader2 } from 'lucide-react';
 
 interface EventListProps {
-  events: EventProps[];
   className?: string;
 }
 
@@ -20,14 +21,58 @@ const categories = [
   'Academic'
 ];
 
-const EventList = ({ events, className }: EventListProps) => {
+const EventList = ({ className }: EventListProps) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
   
-  const featuredEvents = events.filter(event => event.isFeatured);
+  const { 
+    events, 
+    featuredEvents, 
+    isLoading, 
+    isFeaturedLoading, 
+    getEventAttendees,
+    registerForEvent
+  } = useEvents();
   
   const filteredEvents = events.filter(event => 
     selectedCategory === 'All' || event.category === selectedCategory
   );
+
+  // Load attendee counts
+  useEffect(() => {
+    const loadAttendeeCounts = async () => {
+      const counts: Record<string, number> = {};
+      
+      for (const event of events) {
+        try {
+          const attendees = await getEventAttendees(event.id);
+          counts[event.id] = attendees.length;
+        } catch (error) {
+          console.error(`Error loading attendees for event ${event.id}:`, error);
+          counts[event.id] = 0;
+        }
+      }
+      
+      setAttendeeCounts(counts);
+    };
+    
+    if (events.length > 0) {
+      loadAttendeeCounts();
+    }
+  }, [events, getEventAttendees]);
+
+  const handleRegister = (eventId: string) => {
+    registerForEvent.mutate({ eventId });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg">Loading events...</span>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -50,7 +95,7 @@ const EventList = ({ events, className }: EventListProps) => {
         ))}
       </div>
       
-      {featuredEvents.length > 0 && (
+      {!isFeaturedLoading && featuredEvents.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <h3 className="font-medium">Featured Events</h3>
@@ -63,6 +108,8 @@ const EventList = ({ events, className }: EventListProps) => {
                 key={event.id} 
                 event={event} 
                 variant="featured"
+                attendeeCount={attendeeCounts[event.id] || 0}
+                onRegister={handleRegister}
               />
             ))}
           </div>
@@ -71,9 +118,14 @@ const EventList = ({ events, className }: EventListProps) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredEvents
-          .filter(event => !event.isFeatured)
+          .filter(event => !event.is_featured)
           .map(event => (
-            <EventCard key={event.id} event={event} />
+            <EventCard 
+              key={event.id} 
+              event={event}
+              attendeeCount={attendeeCounts[event.id] || 0}
+              onRegister={handleRegister}
+            />
           ))}
       </div>
       

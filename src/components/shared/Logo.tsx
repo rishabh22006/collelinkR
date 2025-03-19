@@ -18,9 +18,9 @@ const Logo = ({ className, size = 'md' }: LogoProps) => {
     <div className={cn("font-semibold flex items-center", sizeClasses[size], className)}>
       <div className="relative">
         <span className="text-primary">C</span>
-        <span className="text-accent absolute -top-0.5 left-[0.4em] transform -rotate-12">C</span>
+        <span className="text-accent absolute -top-0.5 left-[0.4em] transform -rotate-12">L</span>
       </div>
-      <span className="ml-1">Campuscore</span>
+      <span className="ml-1">ColleLink</span>
     </div>
   );
 };
