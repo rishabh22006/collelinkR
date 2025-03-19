@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageTransition from "./components/shared/PageTransition";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
+import Clubs from "./pages/Clubs";
 import Connections from "./pages/Connections";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
@@ -29,6 +30,11 @@ const App = () => (
           <Route path="/search" element={
             <PageTransition>
               <Search />
+            </PageTransition>
+          } />
+          <Route path="/clubs" element={
+            <PageTransition>
+              <Clubs />
             </PageTransition>
           } />
           <Route path="/connections" element={
