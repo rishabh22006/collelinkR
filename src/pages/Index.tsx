@@ -8,10 +8,13 @@ import EventList from '@/components/events/EventList';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
+import useScrollAnimation from '@/hooks/useScrollAnimation';
 
 const Index = () => {
   const { session, profile, signOut } = useAuthStore();
-
+  const headerRef = useScrollAnimation<HTMLHeadingElement>('scale');
+  const descriptionRef = useScrollAnimation<HTMLParagraphElement>('fade', 0.2, 200);
+  
   useEffect(() => {
     // When component mounts, apply a fade-in animation to the body
     document.body.style.opacity = '0';
@@ -47,7 +50,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 bg-gradient-to-b from-background to-secondary/30">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container py-4 flex justify-between items-center">
           <Logo />
@@ -88,9 +91,11 @@ const Index = () => {
         initial="hidden"
         animate="visible"
       >
-        <motion.section variants={itemVariants}>
-          <h1 className="text-3xl font-bold mb-2">Welcome to ColleLink</h1>
-          <p className="text-muted-foreground">Discover events, connect with peers, and build your college community.</p>
+        <motion.section variants={itemVariants} className="text-center py-8">
+          <h1 ref={headerRef} className="text-4xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Welcome to ColleLink</h1>
+          <p ref={descriptionRef} className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Discover events, connect with peers, and build your college community at MIT ADT University.
+          </p>
         </motion.section>
 
         <motion.section variants={itemVariants}>

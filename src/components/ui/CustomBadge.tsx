@@ -35,7 +35,7 @@ const CustomBadge = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium',
+        'inline-flex items-center font-medium transition-all duration-300 hover:scale-[1.05]',
         variantStyles[variant],
         sizeStyles[size],
         className

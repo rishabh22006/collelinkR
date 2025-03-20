@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,30 +13,30 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 12%;
 
-    --primary: 212 32% 44%;
+    --primary: 224 76% 48%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 20% 96%;
-    --secondary-foreground: 212 32% 44%;
+    --secondary-foreground: 224 76% 48%;
 
     --muted: 210 20% 96%;
     --muted-foreground: 215 16% 46%;
 
-    --accent: 354 63% 70%;
-    --accent-foreground: 354 66% 40%;
+    --accent: 340 82% 52%;
+    --accent-foreground: 340 90% 95%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 212 32% 44%;
+    --ring: 224 76% 48%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 212 32% 44%;
+    --sidebar-primary: 224 76% 48%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 5% 96%;
     --sidebar-accent-foreground: 240 6% 10%;
@@ -55,7 +54,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 212 32% 44%;
+    --primary: 224 76% 48%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217 33% 18%;
@@ -64,8 +63,8 @@
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 354 63% 70%;
-    --accent-foreground: 354 66% 40%;
+    --accent: 340 82% 52%;
+    --accent-foreground: 340 90% 95%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
@@ -137,6 +136,33 @@
 
   .card-shadow {
     @apply shadow-card;
+  }
+  
+  .scale-on-scroll {
+    transition: transform 0.3s ease-out;
+  }
+  
+  .scale-on-scroll.active {
+    transform: scale(1.05);
+  }
+  
+  .fade-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  
+  .fade-on-scroll.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .highlight-on-scroll {
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .highlight-on-scroll.active {
+    @apply border-primary shadow-[0_0_15px_rgba(var(--primary)/0.3)];
   }
 }
 
