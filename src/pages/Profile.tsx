@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Settings, Calendar, MessageSquare, Edit, ArrowLeft, Check, Plus, ClipboardList, Pencil } from 'lucide-react';
+import { User, Settings, Calendar, MessageSquare, Edit, ArrowLeft, Check, Plus, ClipboardList, Pencil, MapPin, LogOut } from 'lucide-react';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
 import { Button } from '@/components/ui/button';

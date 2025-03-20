@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Send, Plus, ArrowLeft, MoreVertical, Image, Paperclip, Smile } from 'lucide-react';
+import { Search, Send, Plus, ArrowLeft, MoreVertical, Image, Paperclip, Smile, MessageSquare } from 'lucide-react';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
