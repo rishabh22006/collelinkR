@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { LogIn, UserPlus, Calendar, MapPin, Clock, Users } from 'lucide-react';
-import Logo from '@/components/shared/Logo';
 import EventList from '@/components/events/EventList';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
@@ -13,7 +12,7 @@ import useScrollAnimation from '@/hooks/useScrollAnimation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Index = () => {
-  const { session, profile, signOut } = useAuthStore();
+  const { session, profile } = useAuthStore();
   const headerRef = useScrollAnimation<HTMLHeadingElement>('scale');
   const descriptionRef = useScrollAnimation<HTMLParagraphElement>('fade', 0.2, 200);
   
@@ -82,38 +81,8 @@ const Index = () => {
     <div className="min-h-screen pb-20 bg-gradient-to-b from-background to-secondary/10">
       <TopNavbar />
       
-      <header className="container py-4 flex justify-between items-center">
-        {session ? (
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={profile?.avatar_url || ""} />
-              <AvatarFallback>{profile?.display_name?.charAt(0) || 'U'}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">Hello, {profile?.display_name || 'User'}</p>
-              <p className="text-xs text-muted-foreground">{profile?.institution || 'MIT ADT University'}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/auth">
-                <LogIn className="w-4 h-4 mr-1" /> 
-                Login
-              </Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link to="/auth?tab=signup">
-                <UserPlus className="w-4 h-4 mr-1" /> 
-                Sign Up
-              </Link>
-            </Button>
-          </div>
-        )}
-      </header>
-
       <motion.main 
-        className="container py-2 space-y-8"
+        className="container py-6 space-y-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"

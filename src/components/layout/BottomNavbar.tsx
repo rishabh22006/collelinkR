@@ -11,9 +11,7 @@ const BottomNavbar = () => {
     { path: '/', label: 'Home', icon: Home },
     { path: '/search', label: 'Search', icon: Search },
     { path: '/clubs', label: 'Clubs', icon: Layers },
-    { path: '/communities', label: 'Communities', icon: Users },
     { path: '/messages', label: 'Messages', icon: MessageSquare },
-    { path: '/notifications', label: 'Notifications', icon: Bell },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -26,11 +24,11 @@ const BottomNavbar = () => {
               key={item.path}
               to={item.path}
               className={({ isActive }) => cn(
-                'nav-link',
-                isActive && 'active'
+                'flex flex-col items-center text-xs px-2 py-1',
+                isActive ? 'text-primary' : 'text-muted-foreground'
               )}
             >
-              <item.icon size={20} />
+              <item.icon size={20} className="mb-1" />
               <span>{item.label}</span>
             </NavLink>
           ))}

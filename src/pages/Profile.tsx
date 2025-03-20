@@ -1,64 +1,246 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Settings, Calendar, MessageSquare } from 'lucide-react';
+import { User, Settings, Calendar, MessageSquare, Edit, ArrowLeft, Check, Plus, ClipboardList, Pencil } from 'lucide-react';
 import BottomNavbar from '@/components/layout/BottomNavbar';
+import TopNavbar from '@/components/layout/TopNavbar';
 import { Button } from '@/components/ui/button';
 import CustomBadge from '@/components/ui/CustomBadge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuthStore } from '@/stores/authStore';
+import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Profile = () => {
+  const { profile, signOut } = useAuthStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [bio, setBio] = useState(profile?.bio || "No bio yet. Click edit to add one.");
+  const [editableBio, setEditableBio] = useState(profile?.bio || "");
+  
+  // Sample registered events
+  const registeredEvents = [
+    { id: 1, title: "Campus Hackathon", date: "June 15, 2023", location: "Engineering Building" },
+    { id: 2, title: "Career Fair", date: "June 22, 2023", location: "Student Center" }
+  ];
+  
+  const savedBio = () => {
+    setBio(editableBio);
+    setIsEditing(false);
+    toast.success("Profile updated successfully");
+  };
+  
   return (
     <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="container py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Profile</h1>
-          <button className="btn-icon">
+      <TopNavbar />
+      
+      <header className="container py-4 flex items-center">
+        <Button variant="ghost" size="icon" asChild>
+          <ArrowLeft className="h-5 w-5" onClick={() => window.history.back()} />
+        </Button>
+        <h1 className="text-xl font-semibold ml-2">Profile</h1>
+        <div className="ml-auto flex gap-2">
+          <Button variant="ghost" size="icon">
+            <Edit size={18} />
+          </Button>
+          <Button variant="ghost" size="icon">
             <Settings size={18} />
-          </button>
+          </Button>
         </div>
       </header>
 
-      <main className="container py-6">
+      <main className="container py-4">
         <motion.div 
-          className="flex flex-col items-center text-center"
+          className="flex flex-col items-center text-center mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4 relative">
-            <User size={40} className="text-muted-foreground" />
+            {profile?.avatar_url ? (
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={profile.avatar_url} alt={profile.display_name} />
+                <AvatarFallback>{profile.display_name?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <User size={40} className="text-muted-foreground" />
+            )}
             <div className="absolute bottom-0 right-0">
-              <CustomBadge variant="primary" size="sm">New</CustomBadge>
+              <CustomBadge variant="primary" size="sm">Student</CustomBadge>
             </div>
           </div>
-          <h2 className="text-xl font-semibold mb-1">Your Profile</h2>
-          <p className="text-muted-foreground mb-4">
-            Complete your profile to connect with your campus community.
+          
+          <h2 className="text-xl font-semibold">{profile?.display_name || 'Your Profile'}</h2>
+          <p className="text-sm text-muted-foreground">
+            @{profile?.display_name?.toLowerCase().replace(/\s+/g, '') || 'username'} • {profile?.institution || 'MIT ADT University'}
           </p>
-          <div className="flex gap-2 mb-8">
-            <Button variant="outline" size="sm">
-              <Settings size={14} className="mr-1" />
-              Edit Profile
-            </Button>
-            <Button size="sm">
-              <User size={14} className="mr-1" />
-              View as Public
-            </Button>
+          
+          <div className="flex justify-center gap-6 my-6">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold">0</h3>
+              <p className="text-xs text-muted-foreground">Followers</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold">0</h3>
+              <p className="text-xs text-muted-foreground">Following</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold">12%</h3>
+              <p className="text-xs text-muted-foreground">Profile</p>
+            </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-            <div className="bg-card rounded-xl p-4 text-center shadow-sm">
-              <Calendar size={24} className="mx-auto mb-2 text-primary" />
-              <h3 className="font-medium">My Events</h3>
-              <p className="text-sm text-muted-foreground">0 events</p>
+          
+          <div className="w-full max-w-md">
+            <div className="bg-card rounded-lg p-4 border text-left mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">About</h3>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={savedBio}>
+                      <Check size={14} className="mr-1" />
+                      Save
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                    <Pencil size={14} className="mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+              
+              {isEditing ? (
+                <textarea
+                  className="w-full p-2 border rounded-md text-sm"
+                  rows={4}
+                  value={editableBio}
+                  onChange={(e) => setEditableBio(e.target.value)}
+                  placeholder="Write something about yourself"
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">{bio}</p>
+              )}
             </div>
-            <div className="bg-card rounded-xl p-4 text-center shadow-sm">
-              <MessageSquare size={24} className="mx-auto mb-2 text-primary" />
-              <h3 className="font-medium">Messages</h3>
-              <p className="text-sm text-muted-foreground">No messages</p>
-            </div>
+          </div>
+          
+          <div className="flex gap-2 mb-6">
+            <Button>
+              <MessageSquare size={14} className="mr-1" />
+              Message
+            </Button>
+            <Button variant="outline" onClick={() => signOut()}>
+              Logout
+            </Button>
           </div>
         </motion.div>
+
+        <Tabs defaultValue="events" className="w-full max-w-2xl mx-auto">
+          <TabsList className="grid grid-cols-2 mb-8">
+            <TabsTrigger value="events">My Events</TabsTrigger>
+            <TabsTrigger value="details">My Details</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="events">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold">Registered Events</h3>
+                <Button variant="outline" size="sm">
+                  <Plus size={14} className="mr-1" />
+                  Find Events
+                </Button>
+              </div>
+              
+              {registeredEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {registeredEvents.map(event => (
+                    <motion.div
+                      key={event.id}
+                      className="p-4 border rounded-lg flex justify-between items-center"
+                      whileHover={{ scale: 1.01 }}
+                    >
+                      <div>
+                        <h4 className="font-medium">{event.title}</h4>
+                        <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
+                          <div className="flex items-center">
+                            <Calendar size={12} className="mr-1" />
+                            {event.date}
+                          </div>
+                          <div className="flex items-center">
+                            <MapPin size={12} className="mr-1" />
+                            {event.location}
+                          </div>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm">View</Button>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <ClipboardList className="mx-auto mb-4 text-muted-foreground" size={40} />
+                  <h3 className="text-lg font-medium mb-2">No Events Yet</h3>
+                  <p className="text-muted-foreground mb-4">You haven't registered for any events yet.</p>
+                  <Button>
+                    <Plus size={14} className="mr-1" />
+                    Browse Events
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="details">
+            <div className="space-y-4">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-medium mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Full Name</p>
+                    <p className="font-medium">{profile?.display_name || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{profile?.email || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Institution</p>
+                    <p className="font-medium">{profile?.institution || 'MIT ADT University'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Joined</p>
+                    <p className="font-medium">May 2023</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 border rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium">Account Settings</h3>
+                  <Button variant="outline" size="sm">
+                    <Settings size={14} className="mr-1" />
+                    Settings
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Profile
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Messaging Preferences
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
       <BottomNavbar />

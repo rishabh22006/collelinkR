@@ -30,6 +30,7 @@ const EventCard = ({
   const { data: registration, isLoading: registrationLoading } = useEventRegistration(event.id);
   const isRegistered = !!registration;
   const isFeatured = variant === 'featured' || event.is_featured;
+  const isOfficial = event.host_id === null; // Official events don't have a host_id
   
   const handleRegister = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -52,17 +53,23 @@ const EventCard = ({
   const isLive = new Date(event.date) <= new Date() && 
     (!event.end_date || new Date(event.end_date) >= new Date());
 
+  // Different background colors for official vs normal events
+  const cardColorClass = isOfficial 
+    ? "bg-gradient-to-br from-blue-50 to-violet-50 border-blue-100" 
+    : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100";
+
   return (
     <div 
       className={cn(
-        "group relative rounded-2xl overflow-hidden bg-card card-shadow card-hover transition-all duration-300",
+        "group relative rounded-2xl overflow-hidden card-shadow card-hover transition-all duration-300 border",
+        cardColorClass,
         isFeatured ? "md:flex md:h-64" : "h-auto",
         className
       )}
     >
       <div 
         className={cn(
-          "relative overflow-hidden bg-secondary/30",
+          "relative overflow-hidden bg-secondary/10",
           isFeatured ? "md:w-1/2 h-48 md:h-full" : "h-48"
         )}
       >
@@ -79,8 +86,8 @@ const EventCard = ({
             />
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-primary/10">
-            <CalendarDays size={48} className="text-primary/40" />
+          <div className="w-full h-full flex items-center justify-center bg-primary/5">
+            <CalendarDays size={48} className={isOfficial ? "text-blue-300" : "text-amber-300"} />
           </div>
         )}
         
@@ -92,9 +99,15 @@ const EventCard = ({
           </div>
         )}
         
-        {isFeatured && (
+        {isOfficial && (
           <div className="absolute top-3 right-3 z-10">
-            <CustomBadge variant="primary" size="md">Featured</CustomBadge>
+            <CustomBadge variant="primary" size="md">Official</CustomBadge>
+          </div>
+        )}
+        
+        {isFeatured && !isOfficial && (
+          <div className="absolute top-3 right-3 z-10">
+            <CustomBadge variant="default" size="md">Featured</CustomBadge>
           </div>
         )}
       </div>
@@ -107,13 +120,15 @@ const EventCard = ({
           <div className="flex items-start justify-between">
             <div>
               <CustomBadge 
-                variant="outline" 
+                variant={isOfficial ? "primary" : "default"} 
                 size="sm" 
                 className="mb-2"
               >
                 {event.category}
               </CustomBadge>
-              <h3 className="text-xl font-semibold tracking-tight mb-1">{event.title}</h3>
+              <h3 className={`text-xl font-semibold tracking-tight mb-1 ${isOfficial ? "text-blue-900" : "text-amber-900"}`}>
+                {event.title}
+              </h3>
             </div>
           </div>
           
@@ -142,7 +157,7 @@ const EventCard = ({
             
             <div className="flex items-center">
               <User size={14} className="mr-2" />
-              <span>By {event.host_id ? 'Host' : 'ColleLink'}</span>
+              <span>By {isOfficial ? 'ColleLink' : 'Student Club'}</span>
             </div>
           </div>
         </div>
@@ -150,10 +165,12 @@ const EventCard = ({
         <div className="mt-4 flex justify-between items-center">
           <Button
             size="sm"
-            variant={isRegistered ? "secondary" : "default"}
+            variant={isRegistered ? "secondary" : isOfficial ? "default" : "outline"}
             className={cn(
               "transition-all duration-300",
-              isRegistered ? "opacity-70" : ""
+              isRegistered ? "opacity-70" : "",
+              isOfficial && !isRegistered ? "bg-blue-600 hover:bg-blue-700" : "",
+              !isOfficial && !isRegistered ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""
             )}
             onClick={handleRegister}
             disabled={isRegistered || registrationLoading}

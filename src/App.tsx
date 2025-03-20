@@ -15,6 +15,8 @@ import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import Partners from "./pages/Partners";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,16 @@ const App = () => (
             <Route path="/profile" element={
               <PageTransition>
                 <Profile />
+              </PageTransition>
+            } />
+            <Route path="/about" element={
+              <PageTransition>
+                <About />
+              </PageTransition>
+            } />
+            <Route path="/partners" element={
+              <PageTransition>
+                <Partners />
               </PageTransition>
             } />
             <Route path="/auth" element={
