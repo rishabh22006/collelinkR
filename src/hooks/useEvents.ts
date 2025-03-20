@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Tables } from '@/integrations/supabase/types';
 
 export interface Event {
   id: string;
@@ -48,7 +49,7 @@ export const useEvents = () => {
         throw error;
       }
 
-      return data as Event[];
+      return data as unknown as Event[];
     },
   });
 
@@ -62,14 +63,14 @@ export const useEvents = () => {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .eq('is_featured', true)
+        .eq('is_featured', true as any)
         .order('date', { ascending: true });
 
       if (error) {
         throw error;
       }
 
-      return data as Event[];
+      return data as unknown as Event[];
     },
   });
 
@@ -78,13 +79,13 @@ export const useEvents = () => {
     const { data, error } = await supabase
       .from('event_attendees')
       .select('*')
-      .eq('event_id', eventId);
+      .eq('event_id', eventId as any);
 
     if (error) {
       throw error;
     }
 
-    return data as EventAttendee[];
+    return data as unknown as EventAttendee[];
   };
 
   // Register for an event
@@ -99,9 +100,9 @@ export const useEvents = () => {
       const { data, error } = await supabase
         .from('event_attendees')
         .insert({
-          event_id: eventId,
-          attendee_id: session.session.user.id,
-          status,
+          event_id: eventId as any,
+          attendee_id: session.session.user.id as any,
+          status: status as any,
         })
         .select()
         .single();
@@ -114,7 +115,7 @@ export const useEvents = () => {
         throw error;
       }
 
-      return data as EventAttendee;
+      return data as unknown as EventAttendee;
     },
     onSuccess: () => {
       toast.success('Successfully registered for the event!');
@@ -151,15 +152,15 @@ export const useEventRegistration = (eventId: string) => {
       const { data, error } = await supabase
         .from('event_attendees')
         .select('*')
-        .eq('event_id', eventId)
-        .eq('attendee_id', sessionData.session.user.id)
-        .single();
+        .eq('event_id', eventId as any)
+        .eq('attendee_id', sessionData.session.user.id as any)
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
         throw error;
       }
 
-      return data as EventAttendee | null;
+      return data as unknown as EventAttendee | null;
     },
     enabled: !!eventId,
   });

@@ -45,13 +45,13 @@ export const useAuthStore = create<AuthState>()(
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
-              .eq('id', session.user.id)
+              .eq('id', session.user.id as any)
               .single();
 
             if (error) {
               console.error('Error fetching profile:', error);
             } else {
-              set({ profile });
+              set({ profile: profile as unknown as Profile });
             }
           }
         } catch (error) {

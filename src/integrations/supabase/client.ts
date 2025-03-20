@@ -15,9 +15,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     storageKey: 'collelink-auth-token',
     storage: localStorage,
-    // Set session timeout to 10 days (in seconds)
     detectSessionInUrl: true,
     flowType: 'pkce',
-    sessionTimeout: 60 * 60 * 24 * 10, // 10 days
   },
 });
