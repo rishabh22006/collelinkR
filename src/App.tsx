@@ -9,7 +9,8 @@ import AuthProvider from "./components/providers/AuthProvider";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Clubs from "./pages/Clubs";
-import Connections from "./pages/Connections";
+import Communities from "./pages/Communities";
+import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
@@ -40,9 +41,14 @@ const App = () => (
                 <Clubs />
               </PageTransition>
             } />
-            <Route path="/connections" element={
+            <Route path="/communities" element={
               <PageTransition>
-                <Connections />
+                <Communities />
+              </PageTransition>
+            } />
+            <Route path="/messages" element={
+              <PageTransition>
+                <Messages />
               </PageTransition>
             } />
             <Route path="/notifications" element={

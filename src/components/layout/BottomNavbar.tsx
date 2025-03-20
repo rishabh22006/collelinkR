@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Search, Users, Bell, User, Layers } from 'lucide-react';
+import { Home, Search, Users, Bell, User, Layers, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const BottomNavbar = () => {
@@ -11,7 +11,8 @@ const BottomNavbar = () => {
     { path: '/', label: 'Home', icon: Home },
     { path: '/search', label: 'Search', icon: Search },
     { path: '/clubs', label: 'Clubs', icon: Layers },
-    { path: '/connections', label: 'Connections', icon: Users },
+    { path: '/communities', label: 'Communities', icon: Users },
+    { path: '/messages', label: 'Messages', icon: MessageSquare },
     { path: '/notifications', label: 'Notifications', icon: Bell },
     { path: '/profile', label: 'Profile', icon: User },
   ];
