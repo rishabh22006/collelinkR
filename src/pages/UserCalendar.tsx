@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { format, parse, startOfWeek, getDay, addDays, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
+import { format, isSameDay, isToday } from 'date-fns';
 import { ArrowLeft, ChevronLeft, ChevronRight, Bell, Calendar as CalendarIcon, Clock, MapPin, Users } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import TopNavbar from '@/components/layout/TopNavbar';
@@ -20,7 +20,13 @@ import { Event, EventAttendee } from '@/hooks/useEvents';
 import { cn } from '@/lib/utils';
 
 interface EventWithAttendance extends Event {
-  attendance?: EventAttendee;
+  attendance?: {
+    id: string;
+    event_id: string;
+    attendee_id: string;
+    registered_at: string;
+    status: "registered" | "attended" | "canceled";
+  };
 }
 
 const UserCalendar = () => {
@@ -60,11 +66,16 @@ const UserCalendar = () => {
         if (eventsError) throw eventsError;
         
         // Combine event data with attendance information
-        const eventsWithAttendance = eventsData.map(event => {
+        const eventsWithAttendance: EventWithAttendance[] = eventsData.map(event => {
           const attendance = attendances.find(a => a.event_id === event.id);
+          
+          // Ensure we cast the status to the correct type
           return {
             ...event,
-            attendance
+            attendance: attendance ? {
+              ...attendance,
+              status: attendance.status as "registered" | "attended" | "canceled"
+            } : undefined
           };
         });
         
@@ -183,10 +194,15 @@ const UserCalendar = () => {
                     today: "bg-accent text-accent-foreground",
                     selected: "bg-primary text-primary-foreground",
                   }}
-                  modifiersFn={{
-                    dayModifier: (day) => ({
-                      className: getDayClassNames(day),
-                    }),
+                  modifiers={{
+                    dayModifier: (day) => {
+                      // Check if any events are on this day
+                      const hasEvents = events.some(event => isSameDay(new Date(event.date), day));
+                      return hasEvents;
+                    }
+                  }}
+                  modifiersStyles={{
+                    dayModifier: { backgroundColor: "rgba(var(--primary), 0.15)", fontWeight: "600" }
                   }}
                 />
               </div>

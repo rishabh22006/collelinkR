@@ -24,6 +24,12 @@ export const useNavigation = () => {
       activeIcon: <Users className="h-5 w-5 fill-current" />,
     },
     {
+      name: "Create",
+      href: "/create-post",
+      icon: <PenTool className="h-5 w-5" />,
+      activeIcon: <PenTool className="h-5 w-5 fill-current" />,
+    },
+    {
       name: "Messages",
       href: "/messages",
       icon: <MessageSquare className="h-5 w-5" />,
