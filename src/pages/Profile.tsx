@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Settings, Calendar, MessageSquare, Edit, ArrowLeft, Check, Plus, ClipboardList, Pencil, MapPin, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
 import { Button } from '@/components/ui/button';
@@ -10,23 +11,93 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 const Profile = () => {
   const { profile, signOut } = useAuthStore();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [bio, setBio] = useState(profile?.bio || "No bio yet. Click edit to add one.");
   const [editableBio, setEditableBio] = useState(profile?.bio || "");
+  const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   
-  // Sample registered events
-  const registeredEvents = [
-    { id: 1, title: "Campus Hackathon", date: "June 15, 2023", location: "Engineering Building" },
-    { id: 2, title: "Career Fair", date: "June 22, 2023", location: "Student Center" }
-  ];
+  // Load user's registered events
+  useEffect(() => {
+    const fetchUserEvents = async () => {
+      if (!profile?.id) return;
+      
+      setLoadingEvents(true);
+      
+      try {
+        // Get event attendances for the user
+        const { data: attendances, error: attendanceError } = await supabase
+          .from('event_attendees')
+          .select('*')
+          .eq('attendee_id', profile.id)
+          .order('registered_at', { ascending: false })
+          .limit(5);
+          
+        if (attendanceError) throw attendanceError;
+        
+        if (attendances && attendances.length > 0) {
+          // Get details for these events
+          const eventIds = attendances.map(a => a.event_id);
+          
+          const { data: events, error: eventsError } = await supabase
+            .from('events')
+            .select('*')
+            .in('id', eventIds);
+            
+          if (eventsError) throw eventsError;
+          
+          // Combine the data
+          const eventsWithAttendance = events.map(event => {
+            const attendance = attendances.find(a => a.event_id === event.id);
+            return {
+              ...event,
+              registered_at: attendance?.registered_at
+            };
+          });
+          
+          setRegisteredEvents(eventsWithAttendance);
+        } else {
+          setRegisteredEvents([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user events:', error);
+        toast.error('Failed to load your events');
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    
+    fetchUserEvents();
+  }, [profile?.id]);
   
-  const savedBio = () => {
-    setBio(editableBio);
-    setIsEditing(false);
-    toast.success("Profile updated successfully");
+  const savedBio = async () => {
+    if (!profile?.id) {
+      toast.error("You must be logged in to update your profile");
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ bio: editableBio })
+        .eq('id', profile.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setBio(editableBio);
+      setIsEditing(false);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error("Failed to update profile");
+    }
   };
   
   return (
@@ -84,8 +155,8 @@ const Profile = () => {
               <p className="text-xs text-muted-foreground">Following</p>
             </div>
             <div className="text-center">
-              <h3 className="text-2xl font-bold">12%</h3>
-              <p className="text-xs text-muted-foreground">Profile</p>
+              <h3 className="text-2xl font-bold">{registeredEvents.length}</h3>
+              <p className="text-xs text-muted-foreground">Events</p>
             </div>
           </div>
           
@@ -126,11 +197,14 @@ const Profile = () => {
           </div>
           
           <div className="flex gap-2 mb-6">
-            <Button>
-              <MessageSquare size={14} className="mr-1" />
-              Message
+            <Button asChild>
+              <Link to="/messages">
+                <MessageSquare size={14} className="mr-1" />
+                Message
+              </Link>
             </Button>
             <Button variant="outline" onClick={() => signOut()}>
+              <LogOut size={14} className="mr-1" />
               Logout
             </Button>
           </div>
@@ -146,13 +220,27 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold">Registered Events</h3>
-                <Button variant="outline" size="sm">
-                  <Plus size={14} className="mr-1" />
-                  Find Events
-                </Button>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/calendar">
+                      <Calendar size={14} className="mr-1" />
+                      Calendar
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/">
+                      <Plus size={14} className="mr-1" />
+                      Find Events
+                    </Link>
+                  </Button>
+                </div>
               </div>
               
-              {registeredEvents.length > 0 ? (
+              {loadingEvents ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+                </div>
+              ) : registeredEvents.length > 0 ? (
                 <div className="space-y-3">
                   {registeredEvents.map(event => (
                     <motion.div
@@ -165,11 +253,11 @@ const Profile = () => {
                         <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
                           <div className="flex items-center">
                             <Calendar size={12} className="mr-1" />
-                            {event.date}
+                            {new Date(event.date).toLocaleDateString()}
                           </div>
                           <div className="flex items-center">
                             <MapPin size={12} className="mr-1" />
-                            {event.location}
+                            {event.location || 'Online'}
                           </div>
                         </div>
                       </div>
@@ -182,9 +270,11 @@ const Profile = () => {
                   <ClipboardList className="mx-auto mb-4 text-muted-foreground" size={40} />
                   <h3 className="text-lg font-medium mb-2">No Events Yet</h3>
                   <p className="text-muted-foreground mb-4">You haven't registered for any events yet.</p>
-                  <Button>
-                    <Plus size={14} className="mr-1" />
-                    Browse Events
+                  <Button asChild>
+                    <Link to="/">
+                      <Plus size={14} className="mr-1" />
+                      Browse Events
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -210,7 +300,11 @@ const Profile = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Joined</p>
-                    <p className="font-medium">May 2023</p>
+                    <p className="font-medium">
+                      {profile?.joined_at 
+                        ? new Date(profile.joined_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                        : 'May 2023'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -232,7 +326,11 @@ const Profile = () => {
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Messaging Preferences
                   </Button>
-                  <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => signOut()}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-destructive hover:text-destructive" 
+                    onClick={() => signOut()}
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </Button>

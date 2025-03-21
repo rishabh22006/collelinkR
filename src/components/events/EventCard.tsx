@@ -57,12 +57,30 @@ const EventCard = ({
   const cardColorClass = isOfficial 
     ? "bg-gradient-to-br from-blue-50 to-violet-50 border-blue-100" 
     : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100";
+    
+  // Different card colors based on category
+  const getCategoryStyles = () => {
+    const categoryColorMap: Record<string, string> = {
+      'Hackathons': isOfficial ? 'bg-blue-50 border-blue-200' : 'bg-blue-50 border-blue-200',
+      'Workshops': isOfficial ? 'bg-purple-50 border-purple-200' : 'bg-purple-50 border-purple-200',
+      'Fests': isOfficial ? 'bg-pink-50 border-pink-200' : 'bg-pink-50 border-pink-200',
+      'Social': isOfficial ? 'bg-green-50 border-green-200' : 'bg-green-50 border-green-200',
+      'Sports': isOfficial ? 'bg-red-50 border-red-200' : 'bg-red-50 border-red-200',
+      'Academic': isOfficial ? 'bg-indigo-50 border-indigo-200' : 'bg-indigo-50 border-indigo-200',
+    };
+    
+    const defaultColor = isOfficial 
+      ? 'bg-gradient-to-br from-blue-50 to-violet-50 border-blue-100'
+      : 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100';
+    
+    return categoryColorMap[event.category] || defaultColor;
+  };
 
   return (
     <div 
       className={cn(
         "group relative rounded-2xl overflow-hidden card-shadow card-hover transition-all duration-300 border",
-        cardColorClass,
+        getCategoryStyles(),
         isFeatured ? "md:flex md:h-64" : "h-auto",
         className
       )}

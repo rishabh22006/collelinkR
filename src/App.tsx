@@ -17,6 +17,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Partners from "./pages/Partners";
+import RegisterClub from "./pages/RegisterClub";
+import UserCalendar from "./pages/UserCalendar";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +78,16 @@ const App = () => (
             <Route path="/auth" element={
               <PageTransition>
                 <Auth />
+              </PageTransition>
+            } />
+            <Route path="/register-club" element={
+              <PageTransition>
+                <RegisterClub />
+              </PageTransition>
+            } />
+            <Route path="/calendar" element={
+              <PageTransition>
+                <UserCalendar />
               </PageTransition>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
