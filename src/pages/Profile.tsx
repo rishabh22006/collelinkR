@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Settings, Calendar, MessageSquare, Edit, ArrowLeft, Check, Plus, ClipboardList, Pencil, MapPin, LogOut } from 'lucide-react';
@@ -300,11 +299,7 @@ const Profile = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Joined</p>
-                    <p className="font-medium">
-                      {profile?.joined_at 
-                        ? new Date(profile.joined_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-                        : 'May 2023'}
-                    </p>
+                    <p className="font-medium">May 2023</p>
                   </div>
                 </div>
               </div>
