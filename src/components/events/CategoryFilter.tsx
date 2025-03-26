@@ -16,7 +16,12 @@ const CategoryFilter = ({ categories, selectedCategory, onCategoryChange }: Cate
           key={category}
           variant={selectedCategory === category ? "default" : "outline"}
           size="sm"
-          className="whitespace-nowrap"
+          className={cn(
+            "whitespace-nowrap",
+            selectedCategory === category ? 
+              "bg-primary text-primary-foreground hover:bg-secondary" : 
+              "border-primary text-primary-foreground hover:bg-primary"
+          )}
           onClick={() => onCategoryChange(category)}
         >
           {category}
@@ -25,5 +30,8 @@ const CategoryFilter = ({ categories, selectedCategory, onCategoryChange }: Cate
     </div>
   );
 };
+
+// Add missing import
+import { cn } from '@/lib/utils';
 
 export default CategoryFilter;
