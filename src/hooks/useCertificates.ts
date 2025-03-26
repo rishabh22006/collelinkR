@@ -49,12 +49,19 @@ export const useCertificates = () => {
       if (!profile?.id) throw new Error('User not authenticated');
 
       // Get point rule for this certificate type/level
-      const { data: pointRules, error: rulesError } = await supabase
+      let pointRulesQuery = supabase
         .from('point_rules')
         .select('*')
-        .eq('certificate_type', params.certificate_type)
-        .is('competition_level', params.competition_level || null)
-        .maybeSingle();
+        .eq('certificate_type', params.certificate_type);
+      
+      // Handle competition level differently based on whether it's provided
+      if (params.competition_level) {
+        pointRulesQuery = pointRulesQuery.eq('competition_level', params.competition_level);
+      } else {
+        pointRulesQuery = pointRulesQuery.is('competition_level', null);
+      }
+      
+      const { data: pointRules, error: rulesError } = await pointRulesQuery.maybeSingle();
 
       if (rulesError) throw rulesError;
 
