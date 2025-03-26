@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
-import { Search, ArrowLeft, Users, UserCheck, Star } from 'lucide-react';
+import { Search, ArrowLeft, Users, UserCheck, Star, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 // Import refactored components
 import FeaturedClubCard from '@/components/clubs/FeaturedClubCard';
@@ -21,18 +22,52 @@ import { clubsData, communitiesData } from '@/data/clubsData';
 const Clubs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("clubs");
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
   
-  const filteredClubs = clubsData.filter(club => 
-    club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    club.institution.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    club.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Extract unique categories from club and community data
+  useEffect(() => {
+    const clubCategories = [...new Set(clubsData.map(club => club.category))];
+    setAllCategories(clubCategories.sort());
+  }, []);
 
-  const filteredCommunities = communitiesData.filter(community => 
-    community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    community.institution.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    community.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Toggle filter function
+  const toggleFilter = (category: string) => {
+    if (activeFilters.includes(category)) {
+      setActiveFilters(activeFilters.filter(filter => filter !== category));
+    } else {
+      setActiveFilters([...activeFilters, category]);
+    }
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setActiveFilters([]);
+  };
+  
+  const filteredClubs = clubsData.filter(club => {
+    const matchesSearch = 
+      club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      club.institution.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      club.category.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(club.category);
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredCommunities = communitiesData.filter(community => {
+    const matchesSearch = 
+      community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      community.institution.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      community.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // For communities, we're using the same filters as clubs for simplicity
+    // In a real app, you might have different categories for communities
+    const matchesCategory = activeFilters.length === 0;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const featuredClubs = filteredClubs.filter(club => club.isFeatured);
   const featuredCommunities = filteredCommunities.filter(community => community.isFeatured);
@@ -76,6 +111,36 @@ const Clubs = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+
+        {/* Category Filter UI */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-medium text-foreground">Filter by category:</h2>
+            {activeFilters.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearFilters}
+                className="h-7 px-2 text-xs"
+              >
+                <X size={14} className="mr-1" />
+                Clear filters
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {allCategories.map(category => (
+              <Badge
+                key={category}
+                variant={activeFilters.includes(category) ? "default" : "outline"}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => toggleFilter(category)}
+              >
+                {category}
+              </Badge>
+            ))}
+          </div>
         </div>
 
         {/* Featured Clubs Section */}

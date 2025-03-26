@@ -17,7 +17,7 @@ const RegisterClubCard = () => (
       <h3 className="font-medium text-base mb-1 text-foreground">Get Your Club Listed</h3>
       <p className="text-sm text-muted-foreground mb-3">Register here</p>
       <Button 
-        variant="outline" 
+        variant="default" 
         size="sm"
         className="w-full"
       >

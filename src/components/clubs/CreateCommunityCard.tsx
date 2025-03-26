@@ -17,7 +17,7 @@ const CreateCommunityCard = () => (
       <h3 className="font-medium text-base mb-1 text-foreground">Create New Community</h3>
       <p className="text-sm text-muted-foreground mb-3">Connect with peers</p>
       <Button 
-        variant="outline" 
+        variant="default" 
         size="sm"
         className="w-full"
       >
