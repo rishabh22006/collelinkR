@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Home, Search, Layers, ChevronDown, Info, Users, Settings, FileText, LogOut, PlusCircle, ExternalLink } from 'lucide-react';
+import { Layers, ChevronDown, Info, Users, Settings, FileText, LogOut, PlusCircle, ExternalLink, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/shared/Logo';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,28 +26,6 @@ const TopNavbar = () => {
             <Logo />
             <div className="hidden md:flex items-center gap-6">
               <NavLink
-                to="/"
-                className={({ isActive }) => cn(
-                  'text-sm font-medium',
-                  isActive 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Home
-              </NavLink>
-              <NavLink
-                to="/search"
-                className={({ isActive }) => cn(
-                  'text-sm font-medium',
-                  isActive 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Search
-              </NavLink>
-              <NavLink
                 to="/clubs"
                 className={({ isActive }) => cn(
                   'text-sm font-medium',
@@ -57,6 +35,17 @@ const TopNavbar = () => {
                 )}
               >
                 Clubs
+              </NavLink>
+              <NavLink
+                to="/certificates"
+                className={({ isActive }) => cn(
+                  'text-sm font-medium',
+                  isActive 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Certificates
               </NavLink>
               <NavLink
                 to="/events"
