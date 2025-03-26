@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Layers, ChevronDown, Info, Users, Settings, FileText, LogOut, PlusCircle, ExternalLink, Award } from 'lucide-react';
+import { Layers, ChevronDown, Info, Users, Settings, FileText, LogOut, PlusCircle, ExternalLink, Award, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/shared/Logo';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,9 +14,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { useTheme } from '@/hooks/useTheme';
 
 const TopNavbar = () => {
   const { profile, signOut } = useAuthStore();
+  const { theme, setTheme } = useTheme();
   
   return (
     <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -25,17 +28,6 @@ const TopNavbar = () => {
           <div className="flex items-center gap-8">
             <Logo />
             <div className="hidden md:flex items-center gap-6">
-              <NavLink
-                to="/clubs"
-                className={({ isActive }) => cn(
-                  'text-sm font-medium',
-                  isActive 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Clubs
-              </NavLink>
               <NavLink
                 to="/certificates"
                 className={({ isActive }) => cn(
@@ -103,7 +95,14 @@ const TopNavbar = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}</span>
+              <Switch 
+                checked={theme === 'dark'}
+                onCheckedChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              />
+            </div>
             <Link to="/notifications" className="p-2 rounded-full hover:bg-accent">
               <div className="relative">
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">

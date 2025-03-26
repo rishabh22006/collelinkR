@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, UsersRound, BellRing, Calendar, Award, Medal } from 'lucide-react';
+import { Home, Search, UsersRound, BellRing, Calendar, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -12,7 +12,7 @@ const BottomNavbar = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Search', path: '/search', icon: Search },
-    { name: 'Communities', path: '/clubs', icon: UsersRound },
+    { name: 'Clubs & Communities', path: '/clubs', icon: UsersRound },
     { name: 'Calendar', path: '/calendar', icon: Calendar },
     { name: 'Leaderboard', path: '/leaderboard', icon: Medal },
     { name: 'Notifications', path: '/notifications', icon: BellRing },
