@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -142,7 +141,8 @@ const communitiesData = [
     members: 245,
     description: "For CS enthusiasts to collaborate and learn together.",
     isJoined: false,
-    isFeatured: true
+    isFeatured: true,
+    image: ""
   },
   {
     id: 2,
@@ -151,7 +151,8 @@ const communitiesData = [
     members: 187,
     description: "Connect with fellow engineering students and professionals.",
     isJoined: true,
-    isFeatured: true
+    isFeatured: true,
+    image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
   },
   {
     id: 3,
@@ -160,7 +161,8 @@ const communitiesData = [
     members: 156,
     description: "Discuss art, literature and cultural events around campus.",
     isJoined: false,
-    isFeatured: false
+    isFeatured: false,
+    image: ""
   },
   {
     id: 4,
@@ -169,7 +171,8 @@ const communitiesData = [
     members: 320,
     description: "Join teams, find workout partners, and discuss sports.",
     isJoined: false,
-    isFeatured: false
+    isFeatured: false,
+    image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
   },
 ];
 
@@ -390,7 +393,11 @@ const Clubs = () => {
               
               {activeTab === "communities" && featuredCommunities.map((community) => (
                 <motion.div key={community.id} variants={itemVariants}>
-                  <FeaturedClubCard club={{...community, category: "Community", members: community.members}} />
+                  <FeaturedClubCard club={{
+                    ...community, 
+                    category: "Community",
+                    members: community.members,
+                  }} />
                 </motion.div>
               ))}
             </motion.div>
