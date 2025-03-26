@@ -1,19 +1,19 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Certificate } from '@/types/certificates';
+import { Certificate, certificate_type, competition_level } from '@/types/certificates';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 
 interface AddCertificateParams {
   title: string;
   issuer: string;
-  certificate_type: 'course' | 'competition' | 'other';
-  competition_level?: 'college' | 'state' | 'national' | 'international' | null;
+  certificate_type: certificate_type;
+  competition_level?: competition_level;
   issue_date?: string;
-  expiry_date?: string;
-  media_url?: string;
-  verification_hash?: string;
+  expiry_date?: string | null;
+  media_url?: string | null;
+  verification_hash?: string | null;
 }
 
 export const useCertificates = () => {

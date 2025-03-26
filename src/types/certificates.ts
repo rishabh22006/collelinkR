@@ -1,5 +1,6 @@
 
-import { certificate_type, competition_level } from "@/integrations/supabase/types";
+export type certificate_type = 'course' | 'competition' | 'other';
+export type competition_level = 'college' | 'state' | 'national' | 'international' | null;
 
 export interface Certificate {
   id: string;
@@ -9,7 +10,7 @@ export interface Certificate {
   issue_date: string;
   expiry_date: string | null;
   certificate_type: certificate_type;
-  competition_level: competition_level | null;
+  competition_level: competition_level;
   verification_hash: string | null;
   points_awarded: number;
   media_url: string | null;
@@ -20,7 +21,7 @@ export interface Certificate {
 export interface PointRule {
   id: string;
   certificate_type: certificate_type;
-  competition_level: competition_level | null;
+  competition_level: competition_level;
   points: number;
   created_at: string;
 }

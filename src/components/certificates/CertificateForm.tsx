@@ -27,6 +27,7 @@ import { Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { certificate_type, competition_level } from '@/types/certificates';
 
 const formSchema = z.object({
   title: z.string().min(2, 'Title is required'),
@@ -62,9 +63,14 @@ const CertificateForm: React.FC = () => {
 
   const onSubmit = async (values: CertificateFormValues) => {
     addCertificate.mutate({
-      ...values,
+      title: values.title,
+      issuer: values.issuer,
+      certificate_type: values.certificate_type as certificate_type,
+      competition_level: values.competition_level as competition_level,
       issue_date: values.issue_date.toISOString(),
-      expiry_date: values.expiry_date ? values.expiry_date.toISOString() : undefined,
+      expiry_date: values.expiry_date ? values.expiry_date.toISOString() : null,
+      media_url: values.media_url || null,
+      verification_hash: values.verification_hash || null,
     });
   };
 

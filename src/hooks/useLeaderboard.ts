@@ -24,7 +24,7 @@ export const useLeaderboard = () => {
             avatar_url
           )
         `)
-        .order('overall_rank', { ascending: true, nullsLast: true })
+        .order('overall_rank', { ascending: true })
         .limit(100);
 
       if (error) throw error;
@@ -59,7 +59,7 @@ export const useLeaderboard = () => {
           )
         `)
         .eq('institution', profile.institution)
-        .order('institution_rank', { ascending: true, nullsLast: true })
+        .order('institution_rank', { ascending: true })
         .limit(100);
 
       if (error) throw error;
