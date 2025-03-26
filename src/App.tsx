@@ -23,6 +23,7 @@ import GoogleCalendar from "./pages/GoogleCalendar";
 import CreatePost from "./pages/CreatePost";
 import Certificates from "./pages/Certificates";
 import Leaderboard from "./pages/Leaderboard";
+import Events from "./pages/Events";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,11 @@ const App = () => (
               <Route path="/leaderboard" element={
                 <PageTransition>
                   <Leaderboard />
+                </PageTransition>
+              } />
+              <Route path="/events" element={
+                <PageTransition>
+                  <Events />
                 </PageTransition>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
