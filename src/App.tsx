@@ -20,6 +20,8 @@ import Partners from "./pages/Partners";
 import RegisterClub from "./pages/RegisterClub";
 import UserCalendar from "./pages/UserCalendar";
 import CreatePost from "./pages/CreatePost";
+import Certificates from "./pages/Certificates";
+import Leaderboard from "./pages/Leaderboard";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +96,16 @@ const App = () => (
             <Route path="/create-post" element={
               <PageTransition>
                 <CreatePost />
+              </PageTransition>
+            } />
+            <Route path="/certificates" element={
+              <PageTransition>
+                <Certificates />
+              </PageTransition>
+            } />
+            <Route path="/leaderboard" element={
+              <PageTransition>
+                <Leaderboard />
               </PageTransition>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

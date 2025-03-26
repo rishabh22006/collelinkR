@@ -9,6 +9,68 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          competition_level:
+            | Database["public"]["Enums"]["competition_level"]
+            | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          issue_date: string
+          issuer: string
+          media_url: string | null
+          metadata: Json | null
+          points_awarded: number
+          student_id: string
+          title: string
+          verification_hash: string | null
+        }
+        Insert: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          competition_level?:
+            | Database["public"]["Enums"]["competition_level"]
+            | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string
+          issuer: string
+          media_url?: string | null
+          metadata?: Json | null
+          points_awarded?: number
+          student_id: string
+          title: string
+          verification_hash?: string | null
+        }
+        Update: {
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          competition_level?:
+            | Database["public"]["Enums"]["competition_level"]
+            | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string
+          issuer?: string
+          media_url?: string | null
+          metadata?: Json | null
+          points_awarded?: number
+          student_id?: string
+          title?: string
+          verification_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -362,6 +424,44 @@ export type Database = {
           },
         ]
       }
+      leaderboard: {
+        Row: {
+          id: string
+          institution: string | null
+          institution_rank: number | null
+          last_updated: string
+          overall_rank: number | null
+          student_id: string
+          total_points: number
+        }
+        Insert: {
+          id?: string
+          institution?: string | null
+          institution_rank?: number | null
+          last_updated?: string
+          overall_rank?: number | null
+          student_id: string
+          total_points?: number
+        }
+        Update: {
+          id?: string
+          institution?: string | null
+          institution_rank?: number | null
+          last_updated?: string
+          overall_rank?: number | null
+          student_id?: string
+          total_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: {
           comment_id: string | null
@@ -453,6 +553,36 @@ export type Database = {
           },
         ]
       }
+      point_rules: {
+        Row: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          competition_level:
+            | Database["public"]["Enums"]["competition_level"]
+            | null
+          created_at: string
+          id: string
+          points: number
+        }
+        Insert: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          competition_level?:
+            | Database["public"]["Enums"]["competition_level"]
+            | null
+          created_at?: string
+          id?: string
+          points: number
+        }
+        Update: {
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          competition_level?:
+            | Database["public"]["Enums"]["competition_level"]
+            | null
+          created_at?: string
+          id?: string
+          points?: number
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_id: string
@@ -514,6 +644,7 @@ export type Database = {
           institution: string | null
           joined_at: string
           role: Database["public"]["Enums"]["user_role"]
+          total_points: number
           updated_at: string | null
         }
         Insert: {
@@ -525,6 +656,7 @@ export type Database = {
           institution?: string | null
           joined_at?: string
           role?: Database["public"]["Enums"]["user_role"]
+          total_points?: number
           updated_at?: string | null
         }
         Update: {
@@ -536,6 +668,7 @@ export type Database = {
           institution?: string | null
           joined_at?: string
           role?: Database["public"]["Enums"]["user_role"]
+          total_points?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -553,6 +686,10 @@ export type Database = {
           media_urls_new: string[]
         }
         Returns: boolean
+      }
+      get_auth_user: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_user_role: {
         Args: {
@@ -574,8 +711,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_leaderboard_ranks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
+      certificate_type: "course" | "competition" | "other"
+      competition_level: "college" | "state" | "national" | "international"
       user_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {

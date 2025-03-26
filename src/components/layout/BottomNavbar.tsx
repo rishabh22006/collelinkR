@@ -1,40 +1,67 @@
 
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Search, Users, Bell, User, Layers, MessageSquare } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Home, Search, UsersRound, BellRing, User, Award, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 
 const BottomNavbar = () => {
+  const navigate = useNavigate();
   const location = useLocation();
-  
+
   const navItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/search', label: 'Search', icon: Search },
-    { path: '/clubs', label: 'Clubs', icon: Layers },
-    { path: '/messages', label: 'Messages', icon: MessageSquare },
-    { path: '/profile', label: 'Profile', icon: User },
+    { name: 'Home', path: '/', icon: Home },
+    { name: 'Search', path: '/search', icon: Search },
+    { name: 'Communities', path: '/communities', icon: UsersRound },
+    { name: 'Certificates', path: '/certificates', icon: Award },
+    { name: 'Leaderboard', path: '/leaderboard', icon: Medal },
+    { name: 'Notifications', path: '/notifications', icon: BellRing },
+    { name: 'Profile', path: '/profile', icon: User },
   ];
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-smooth">
-      <div className="container max-w-lg mx-auto px-4">
-        <div className="flex justify-between items-center py-3">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => cn(
-                'flex flex-col items-center text-xs px-2 py-1',
-                isActive ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              <item.icon size={20} className="mb-1" />
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </div>
-    </nav>
+    <motion.div 
+      className="fixed bottom-0 left-0 right-0 bg-background border-t py-2 px-3 z-50 flex justify-between items-center"
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      {navItems.map((item) => (
+        <Button
+          key={item.name}
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "flex-col h-16 rounded-xl hover:bg-primary/10",
+            isActive(item.path) && "text-primary"
+          )}
+          onClick={() => navigate(item.path)}
+        >
+          <item.icon 
+            size={isActive(item.path) ? 22 : 20} 
+            className={cn(
+              "mb-1 transition-all",
+              isActive(item.path) ? "stroke-[2.5px]" : "stroke-[1.5px]",
+            )} 
+          />
+          <span className={cn(
+            "text-xs",
+            isActive(item.path) ? "font-bold" : "font-medium text-muted-foreground"
+          )}>
+            {item.name}
+          </span>
+          {isActive(item.path) && (
+            <motion.div
+              layoutId="bottomNav"
+              className="absolute bottom-0 h-1 w-1/2 rounded-t-full bg-primary"
+              transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
+            />
+          )}
+        </Button>
+      ))}
+    </motion.div>
   );
 };
 
