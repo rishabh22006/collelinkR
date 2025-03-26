@@ -59,21 +59,21 @@ const GoogleCalendar = () => {
 
   // Categorize events by type to show them in different colors
   const categorizeEvents = (selectedDateEvents) => {
-    const categories = {
+    const categories: Record<string, any[]> = {
       Hackathons: [],
       Workshops: [],
       Fests: [],
       Social: [],
       Sports: [],
       Academic: [],
-      Cultural: []
+      Cultural: [],
+      Other: [] // Add Other category explicitly in the type
     };
     
     selectedDateEvents.forEach(event => {
       if (categories[event.category]) {
         categories[event.category].push(event);
       } else {
-        categories.Other = categories.Other || [];
         categories.Other.push(event);
       }
     });
