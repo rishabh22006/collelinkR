@@ -1,12 +1,13 @@
 
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.error(
@@ -14,6 +15,10 @@ const NotFound = () => {
       location.pathname
     );
   }, [location.pathname]);
+
+  const goBack = () => {
+    navigate(-1);
+  };
 
   return (
     <motion.div 
@@ -46,16 +51,24 @@ const NotFound = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4 }}
       >
-        Oops! The page you're looking for doesn't exist.
+        Oops! The page <span className="font-semibold">{location.pathname}</span> doesn't exist.
       </motion.p>
       
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
+        className="flex gap-4"
       >
+        <Button variant="outline" onClick={goBack} size="lg">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Go Back
+        </Button>
         <Button asChild size="lg">
-          <a href="/">Return to Home</a>
+          <a href="/">
+            <Home className="mr-2 h-4 w-4" />
+            Return Home
+          </a>
         </Button>
       </motion.div>
     </motion.div>

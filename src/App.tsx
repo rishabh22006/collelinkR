@@ -19,6 +19,7 @@ import About from "./pages/About";
 import Partners from "./pages/Partners";
 import RegisterClub from "./pages/RegisterClub";
 import UserCalendar from "./pages/UserCalendar";
+import GoogleCalendar from "./pages/GoogleCalendar";
 import CreatePost from "./pages/CreatePost";
 import Certificates from "./pages/Certificates";
 import Leaderboard from "./pages/Leaderboard";
@@ -89,6 +90,11 @@ const App = () => (
               </PageTransition>
             } />
             <Route path="/calendar" element={
+              <PageTransition>
+                <GoogleCalendar />
+              </PageTransition>
+            } />
+            <Route path="/user-calendar" element={
               <PageTransition>
                 <UserCalendar />
               </PageTransition>
