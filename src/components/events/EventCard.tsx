@@ -1,14 +1,15 @@
 
 import React from 'react';
-import { CalendarDays, Clock, MapPin, User, Users, ChevronRight } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import CustomBadge from '../ui/CustomBadge';
-import { Button } from '@/components/ui/button';
-import { Event, useEventRegistration } from '@/hooks/useEvents';
 import { useAuthStore } from '@/stores/authStore';
 import { useNavigate } from 'react-router-dom';
+import { Event, useEventRegistration } from '@/hooks/useEvents';
+import EventCardBadge from './EventCardBadge';
+import EventCardImage from './EventCardImage';
+import EventCardMeta from './EventCardMeta';
+import EventCardActions from './EventCardActions';
+import CustomBadge from '../ui/CustomBadge';
 
 interface EventCardProps {
   event: Event;
@@ -53,11 +54,6 @@ const EventCard = ({
   const isLive = new Date(event.date) <= new Date() && 
     (!event.end_date || new Date(event.end_date) >= new Date());
 
-  // Different background colors for official vs normal events
-  const cardColorClass = isOfficial 
-    ? "bg-gradient-to-br from-blue-50 to-violet-50 border-blue-100" 
-    : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100";
-    
   // Different card colors based on category
   const getCategoryStyles = () => {
     const categoryColorMap: Record<string, string> = {
@@ -85,50 +81,16 @@ const EventCard = ({
         className
       )}
     >
-      <div 
-        className={cn(
-          "relative overflow-hidden bg-secondary/10",
-          isFeatured ? "md:w-1/2 h-48 md:h-full" : "h-48"
-        )}
-      >
-        {event.image_url ? (
-          <div 
-            className="blur-load w-full h-full" 
-            style={{ backgroundImage: `url(${event.image_url}?blur=20)` }}
-          >
-            <img 
-              src={event.image_url} 
-              alt={event.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onLoad={(e) => e.currentTarget.parentElement?.classList.add('loaded')}
-            />
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-primary/5">
-            <CalendarDays size={48} className={isOfficial ? "text-blue-300" : "text-amber-300"} />
-          </div>
-        )}
-        
-        {isLive && (
-          <div className="absolute top-3 left-3 z-10">
-            <CustomBadge variant="live" size="md">
-              <span className="mr-1">●</span> LIVE NOW
-            </CustomBadge>
-          </div>
-        )}
-        
-        {isOfficial && (
-          <div className="absolute top-3 right-3 z-10">
-            <CustomBadge variant="primary" size="md">Official</CustomBadge>
-          </div>
-        )}
-        
-        {isFeatured && !isOfficial && (
-          <div className="absolute top-3 right-3 z-10">
-            <CustomBadge variant="default" size="md">Featured</CustomBadge>
-          </div>
-        )}
-      </div>
+      <EventCardImage 
+        imageUrl={event.image_url} 
+        title={event.title}
+        isOfficial={isOfficial}
+        isFeatured={isFeatured}
+      />
+      
+      {isLive && <EventCardBadge isLive={true} />}
+      {isOfficial && <EventCardBadge isOfficial={true} />}
+      {isFeatured && !isOfficial && <EventCardBadge isFeatured={true} />}
       
       <div className={cn(
         "p-5 flex flex-col justify-between",
@@ -150,54 +112,20 @@ const EventCard = ({
             </div>
           </div>
           
-          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <CalendarDays size={14} className="mr-2" />
-              <span>{format(parseISO(event.date), 'EEEE, MMMM do')}</span>
-            </div>
-            
-            <div className="flex items-center">
-              <Clock size={14} className="mr-2" />
-              <span>{format(parseISO(event.date), 'h:mm a')}</span>
-            </div>
-            
-            {event.location && (
-              <div className="flex items-center">
-                <MapPin size={14} className="mr-2" />
-                <span>{event.location}</span>
-              </div>
-            )}
-            
-            <div className="flex items-center">
-              <Users size={14} className="mr-2" />
-              <span>{attendeeCount} attendees</span>
-            </div>
-            
-            <div className="flex items-center">
-              <User size={14} className="mr-2" />
-              <span>By {isOfficial ? 'ColleLink' : 'Student Club'}</span>
-            </div>
-          </div>
+          <EventCardMeta 
+            date={event.date}
+            location={event.location}
+            attendeeCount={attendeeCount}
+            isOfficial={isOfficial}
+          />
         </div>
         
-        <div className="mt-4 flex justify-between items-center">
-          <Button
-            size="sm"
-            variant={isRegistered ? "secondary" : isOfficial ? "default" : "outline"}
-            className={cn(
-              "transition-all duration-300",
-              isRegistered ? "opacity-70" : "",
-              isOfficial && !isRegistered ? "bg-blue-600 hover:bg-blue-700" : "",
-              !isOfficial && !isRegistered ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""
-            )}
-            onClick={handleRegister}
-            disabled={isRegistered || registrationLoading}
-          >
-            {registrationLoading ? "Loading..." : isRegistered ? "Registered" : "Register"}
-          </Button>
-          
-          <ChevronRight size={18} className="text-muted-foreground/50 transition-all duration-300 group-hover:translate-x-1" />
-        </div>
+        <EventCardActions 
+          isRegistered={isRegistered}
+          isLoading={registrationLoading}
+          isOfficial={isOfficial}
+          onRegister={handleRegister}
+        />
       </div>
     </div>
   );

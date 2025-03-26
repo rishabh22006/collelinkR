@@ -75,3 +75,21 @@ export const getDayClassNames = (day: Date, events: any[]) => {
   
   return classNames.join(' ');
 };
+
+// Get event card category styling
+export const getEventCardCategoryStyle = (category: string, isOfficial: boolean): string => {
+  const categoryColorMap: Record<string, string> = {
+    'Hackathons': 'bg-blue-50 border-blue-200',
+    'Workshops': 'bg-purple-50 border-purple-200',
+    'Fests': 'bg-pink-50 border-pink-200',
+    'Social': 'bg-green-50 border-green-200',
+    'Sports': 'bg-red-50 border-red-200',
+    'Academic': 'bg-indigo-50 border-indigo-200',
+  };
+  
+  const defaultColor = isOfficial 
+    ? 'bg-gradient-to-br from-blue-50 to-violet-50 border-blue-100'
+    : 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100';
+  
+  return categoryColorMap[category] || defaultColor;
+};
