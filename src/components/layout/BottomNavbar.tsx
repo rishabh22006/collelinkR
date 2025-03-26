@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, UsersRound, BellRing, User, Award, Medal, Calendar } from 'lucide-react';
+import { Home, Search, UsersRound, BellRing, Calendar, Award, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -12,14 +12,19 @@ const BottomNavbar = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Search', path: '/search', icon: Search },
-    { name: 'Communities', path: '/communities', icon: UsersRound },
+    { name: 'Communities', path: '/clubs', icon: UsersRound },
     { name: 'Calendar', path: '/calendar', icon: Calendar },
-    { name: 'Certificates', path: '/certificates', icon: Award },
     { name: 'Leaderboard', path: '/leaderboard', icon: Medal },
-    { name: 'Profile', path: '/profile', icon: User },
+    { name: 'Notifications', path: '/notifications', icon: BellRing },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    // Special case for communities and clubs to highlight the same tab
+    if (path === '/clubs' && (location.pathname === '/clubs' || location.pathname === '/communities')) {
+      return true;
+    }
+    return location.pathname === path;
+  };
 
   return (
     <motion.div 

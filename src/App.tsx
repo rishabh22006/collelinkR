@@ -3,13 +3,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PageTransition from "./components/shared/PageTransition";
 import AuthProvider from "./components/providers/AuthProvider";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Clubs from "./pages/Clubs";
-import Communities from "./pages/Communities";
 import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
@@ -50,9 +49,7 @@ const App = () => (
               </PageTransition>
             } />
             <Route path="/communities" element={
-              <PageTransition>
-                <Communities />
-              </PageTransition>
+              <Navigate to="/clubs" replace />
             } />
             <Route path="/messages" element={
               <PageTransition>
