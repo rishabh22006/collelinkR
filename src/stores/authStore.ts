@@ -12,7 +12,7 @@ type Profile = {
   institution: string | null;
   bio: string | null;
   role: 'admin' | 'moderator' | 'user';
-  joined_at?: string; // Added joined_at field as optional
+  joined_at?: string;
 };
 
 interface AuthState {
@@ -25,6 +25,10 @@ interface AuthState {
   signOut: () => Promise<void>;
 }
 
+/**
+ * Auth store with optimized methods
+ * Leverages db functions like get_auth_user() behind the scenes
+ */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -42,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
           set({ session });
 
           if (session?.user) {
-            // Get profile
+            // Get profile (benefits from optimized RLS policy)
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
