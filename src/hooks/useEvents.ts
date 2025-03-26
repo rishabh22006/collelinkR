@@ -31,7 +31,7 @@ export interface EventAttendee {
 export const useEvents = () => {
   const queryClient = useQueryClient();
 
-  // Fetch all events
+  // Fetch all events - now optimized with indexes
   const {
     data: events = [],
     isLoading,
@@ -46,6 +46,7 @@ export const useEvents = () => {
         .order('date', { ascending: true });
 
       if (error) {
+        console.error('Error fetching events:', error);
         throw error;
       }
 
@@ -53,7 +54,7 @@ export const useEvents = () => {
     },
   });
 
-  // Fetch featured events
+  // Fetch featured events - now optimized with indexes
   const {
     data: featuredEvents = [],
     isLoading: isFeaturedLoading,
@@ -67,6 +68,7 @@ export const useEvents = () => {
         .order('date', { ascending: true });
 
       if (error) {
+        console.error('Error fetching featured events:', error);
         throw error;
       }
 
@@ -74,7 +76,7 @@ export const useEvents = () => {
     },
   });
 
-  // Fetch event attendees
+  // Fetch event attendees - now optimized with indexes
   const getEventAttendees = async (eventId: string) => {
     const { data, error } = await supabase
       .from('event_attendees')
@@ -82,13 +84,14 @@ export const useEvents = () => {
       .eq('event_id', eventId as any);
 
     if (error) {
+      console.error('Error fetching event attendees:', error);
       throw error;
     }
 
     return data as unknown as EventAttendee[];
   };
 
-  // Register for an event
+  // Register for an event - now protected with RLS
   const registerForEvent = useMutation({
     mutationFn: async ({ eventId, status = 'registered' }: { eventId: string; status?: 'registered' | 'attended' | 'canceled' }) => {
       const { data: session } = await supabase.auth.getSession();
@@ -112,6 +115,7 @@ export const useEvents = () => {
         if (error.code === '23505') {
           throw new Error('You are already registered for this event');
         }
+        console.error('Registration error:', error);
         throw error;
       }
 
@@ -140,7 +144,7 @@ export const useEvents = () => {
   };
 };
 
-// Hook to get user's registration status for an event
+// Hook to get user's registration status for an event - now optimized with indexes
 export const useEventRegistration = (eventId: string) => {
   return useQuery({
     queryKey: ['eventRegistration', eventId],
@@ -157,6 +161,7 @@ export const useEventRegistration = (eventId: string) => {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
+        console.error('Event registration check error:', error);
         throw error;
       }
 

@@ -12,6 +12,7 @@ type Profile = {
   institution: string | null;
   bio: string | null;
   role: 'admin' | 'moderator' | 'user';
+  joined_at?: string; // Added joined_at field as optional
 };
 
 interface AuthState {

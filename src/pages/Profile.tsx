@@ -99,6 +99,17 @@ const Profile = () => {
     }
   };
   
+  // Format the joined date
+  const formatJoinedDate = () => {
+    if (profile?.joined_at) {
+      return new Date(profile.joined_at).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long' 
+      });
+    }
+    return 'May 2023'; // Fallback
+  };
+  
   return (
     <div className="min-h-screen pb-20">
       <TopNavbar />
@@ -299,7 +310,7 @@ const Profile = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Joined</p>
-                    <p className="font-medium">May 2023</p>
+                    <p className="font-medium">{formatJoinedDate()}</p>
                   </div>
                 </div>
               </div>
