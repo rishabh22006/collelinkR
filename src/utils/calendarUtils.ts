@@ -1,5 +1,5 @@
 
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, isToday } from 'date-fns';
 
 // Function to convert events to calendar-friendly format
 export const mapEventsToCalendarFormat = (events: any[]) => {
@@ -57,4 +57,21 @@ export const categoryColors: Record<string, { bg: string, text: string }> = {
   Academic: { bg: 'bg-indigo-500', text: 'text-white' },
   Cultural: { bg: 'bg-pink-500', text: 'text-white' },
   Other: { bg: 'bg-gray-500', text: 'text-white' }
+};
+
+// Helper function to get the color for a category
+export const getCategoryColor = (category: string) => {
+  return categoryColors[category] || { bg: 'bg-gray-500', text: 'text-white' };
+};
+
+// Helper to get dates with events for highlighting in the calendar
+export const getDayClassNames = (day: Date, events: any[]) => {
+  // Check if any events are on this day
+  const hasEvents = events.some(event => isSameDay(new Date(event.date), day));
+  
+  const classNames = [];
+  if (isToday(day)) classNames.push("bg-accent text-accent-foreground");
+  if (hasEvents) classNames.push("bg-primary/15 font-semibold");
+  
+  return classNames.join(' ');
 };
