@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import CustomBadge from '../ui/CustomBadge';
-import EventCard from './EventCard';
-import { useEvents } from '@/hooks/useEvents';
 import { Loader2 } from 'lucide-react';
+import { useEvents } from '@/hooks/useEvents';
+import CategoryFilter from './CategoryFilter';
+import FeaturedEventsList from './FeaturedEventsList';
+import RegularEventsList from './RegularEventsList';
 
 interface EventListProps {
   className?: string;
@@ -65,6 +66,10 @@ const EventList = ({ className }: EventListProps) => {
     registerForEvent.mutate({ eventId });
   };
 
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -81,59 +86,24 @@ const EventList = ({ className }: EventListProps) => {
         <Button variant="outline" size="sm">View All</Button>
       </div>
       
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
-        {categories.map(category => (
-          <Button
-            key={category}
-            variant={selectedCategory === category ? "default" : "outline"}
-            size="sm"
-            className="whitespace-nowrap"
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </Button>
-        ))}
-      </div>
+      <CategoryFilter 
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
+      />
       
-      {!isFeaturedLoading && featuredEvents.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium">Featured Events</h3>
-            <CustomBadge variant="primary" size="sm">Recommended</CustomBadge>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-6">
-            {featuredEvents.map(event => (
-              <EventCard 
-                key={event.id} 
-                event={event} 
-                variant="featured"
-                attendeeCount={attendeeCounts[event.id] || 0}
-                onRegister={handleRegister}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <FeaturedEventsList
+        events={featuredEvents}
+        attendeeCounts={attendeeCounts}
+        onRegister={handleRegister}
+        isLoading={isFeaturedLoading}
+      />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredEvents
-          .filter(event => !event.is_featured)
-          .map(event => (
-            <EventCard 
-              key={event.id} 
-              event={event}
-              attendeeCount={attendeeCounts[event.id] || 0}
-              onRegister={handleRegister}
-            />
-          ))}
-      </div>
-      
-      {filteredEvents.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">No events found for this category.</p>
-        </div>
-      )}
+      <RegularEventsList
+        events={filteredEvents}
+        attendeeCounts={attendeeCounts}
+        onRegister={handleRegister}
+      />
     </div>
   );
 };
