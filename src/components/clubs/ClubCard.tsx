@@ -48,8 +48,6 @@ const ClubCard = ({ club }: { club: ClubDataProps }) => {
         clubId={club.id.toString()}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        onJoinToggle={handleJoinToggle}
-        isJoined={isJoined}
       />
     </>
   );

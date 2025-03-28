@@ -1,11 +1,10 @@
 
 import { Database } from '@/integrations/supabase/types';
-import { Tables } from '@/integrations/supabase/types';
 
-// Export types
-export type Club = Tables<'clubs'>;
-export type ClubMember = Tables<'club_members'>;
-export type ClubAdmin = Tables<'club_admins'>;
+// Export types from Supabase types
+export type Club = Database['public']['Tables']['clubs']['Row'];
+export type ClubMember = Database['public']['Tables']['club_members']['Row'];
+export type ClubAdmin = Database['public']['Tables']['club_admins']['Row'];
 
 // Shared interfaces and types for club-related functionality
 export interface ClubDetails extends Club {

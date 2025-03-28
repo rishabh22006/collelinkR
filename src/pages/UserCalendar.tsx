@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, CalendarDays, List } from "lucide-react";
 import DailyEvents from '@/components/calendar/DailyEvents';
+import { getMonthEvents } from '@/utils/getMonthEvents';
 
 const UserCalendar = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -19,7 +20,7 @@ const UserCalendar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [view, setView] = useState('month');
   
-  const { getEvents, getMonthEvents } = useEvents();
+  const { events: allEvents } = useEvents();
   
   // Fetch events for the selected month
   const {
@@ -82,7 +83,9 @@ const UserCalendar = () => {
             <CalendarView 
               events={events} 
               isLoading={isLoading}
-              onSelectEvent={handleEventClick}
+              date={selectedDate}
+              setDate={setSelectedDate}
+              onEventClick={handleEventClick}
             />
           </TabsContent>
           
@@ -93,8 +96,8 @@ const UserCalendar = () => {
                 format(selectedDate, 'yyyy-MM-dd')
               )}
               date={selectedDate}
-              onSelectDate={setSelectedDate}
-              onSelectEvent={handleEventClick}
+              setDate={setSelectedDate}
+              onEventClick={handleEventClick}
               isLoading={isLoading}
             />
           </TabsContent>
@@ -105,7 +108,7 @@ const UserCalendar = () => {
       
       {selectedEvent && (
         <EventDetailsModal 
-          event={selectedEvent}
+          eventId={selectedEvent.id}
           isOpen={isModalOpen} 
           onClose={handleCloseModal} 
         />
