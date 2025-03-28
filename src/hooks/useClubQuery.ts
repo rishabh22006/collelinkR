@@ -70,7 +70,12 @@ export const useClubQuery = () => {
         return null;
       }
 
-      return data as ClubDetails;
+      // The RPC function returns an array, but we need just the first element
+      if (Array.isArray(data) && data.length > 0) {
+        return data[0] as ClubDetails;
+      }
+      
+      return null;
     } catch (err) {
       console.error('Failed to fetch club:', err);
       return null;
