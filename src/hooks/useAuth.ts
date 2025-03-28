@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Custom hook for authentication state management
- * Optimized to use the new database security functions
  */
 export const useAuth = () => {
   const { session, profile, isLoading, checkAuth, signOut } = useAuthStore();
@@ -14,7 +13,7 @@ export const useAuth = () => {
     // Check authentication status when the component mounts
     checkAuth();
 
-    // Subscribe to auth changes using the optimized channel
+    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (event === 'SIGNED_IN') {
@@ -41,7 +40,7 @@ export const useAuth = () => {
     isModerator: profile?.role === 'moderator',
     signOut,
     // Add university related helpers
-    university: profile?.university || 'mit-adt',
+    university: profile?.university || '',
     college: profile?.college || '',
     hasUniversityInfo: !!(profile?.university && profile?.college)
   };

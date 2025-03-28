@@ -56,33 +56,45 @@ const SignupForm = ({ onSuccess, universityData }: SignupFormProps) => {
         }
       }
       
-      const { error } = await supabase.auth.signUp({
+      // Sign up the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           data: {
             display_name: values.displayName,
             university: universityData.university,
-            college: collegeName || universityData.college,
+            college: universityData.college,
+            college_name: collegeName,
           },
         },
       });
 
-      if (error) {
-        throw error;
+      if (signUpError) {
+        throw signUpError;
       }
 
       toast.success('Account created successfully', {
-        description: 'Please check your email for verification',
+        description: 'Please check your email for verification if required',
       });
       
-      // Directly sign in after signup (if no email verification is required)
-      await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-      
-      onSuccess();
+      // If email verification is disabled, we can sign in directly
+      if (signUpData.session) {
+        // Profile should be created automatically via trigger
+        onSuccess();
+      } else {
+        // Try to sign in immediately (works if email verification is disabled)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        
+        if (!signInError) {
+          onSuccess();
+        } else {
+          toast.info('Please verify your email before logging in');
+        }
+      }
     } catch (error: any) {
       toast.error('Signup failed', {
         description: error.message,

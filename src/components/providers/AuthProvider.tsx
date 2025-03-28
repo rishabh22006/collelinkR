@@ -9,21 +9,24 @@ type AuthProviderProps = {
 
 /**
  * Auth Provider component
- * Updated to leverage optimized auth checks
+ * Manages authentication state across the application
  */
 const AuthProvider = ({ children }: AuthProviderProps) => {
   const { setSession, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // Initial auth check - leverages get_auth_user() on the backend
+    // Initial auth check
     checkAuth();
 
-    // Listen for auth changes with performance optimization
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
+        // Update session state
         setSession(session);
         
-        // Only trigger a full profile fetch when necessary
+        // If signed in or token refreshed, fetch full profile data
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           checkAuth();
         }

@@ -29,7 +29,6 @@ interface AuthState {
 
 /**
  * Auth store with optimized methods
- * Leverages db functions like get_auth_user() behind the scenes
  */
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -48,18 +47,23 @@ export const useAuthStore = create<AuthState>()(
           set({ session });
 
           if (session?.user) {
-            // Get profile (benefits from optimized RLS policy)
+            console.log("Found session for user:", session.user.id);
+            
+            // Get profile
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
-              .eq('id', session.user.id as any)
+              .eq('id', session.user.id)
               .single();
 
             if (error) {
               console.error('Error fetching profile:', error);
             } else {
+              console.log("Found profile:", profile);
               set({ profile: profile as unknown as Profile });
             }
+          } else {
+            console.log("No active session found");
           }
         } catch (error) {
           console.error('Auth check error:', error);

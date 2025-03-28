@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Bell, Menu, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,13 +12,25 @@ import { Badge } from '@/components/ui/badge';
 
 const TopNavbar = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuthStore();
+  const location = useLocation();
+  const { profile, session, signOut, isLoading } = useAuthStore();
   const { unreadCount } = useNotifications();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+
+  useEffect(() => {
+    // Only set hasCheckedAuth to true after the initial loading is complete
+    if (!isLoading) {
+      setHasCheckedAuth(true);
+    }
+  }, [isLoading]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
   };
+
+  // Don't show the login button on the auth page
+  const isAuthPage = location.pathname === '/auth';
 
   return (
     <header className="bg-background border-b sticky top-0 z-50">
@@ -51,44 +63,48 @@ const TopNavbar = () => {
             )}
           </Button>
           
-          {profile ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={profile.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {profile.display_name?.charAt(0) || profile.email?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+          {hasCheckedAuth && (
+            <>
+              {session && profile ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={profile.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {profile.display_name?.charAt(0) || profile.email?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{profile.display_name}</span>
+                        <span className="text-xs text-muted-foreground">{profile.email}</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => navigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => navigate('/settings')}>
+                      <Menu className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={handleLogout}>
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : !isAuthPage ? (
+                <Button variant="outline" onClick={() => navigate('/auth')}>
+                  Login
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{profile.display_name}</span>
-                    <span className="text-xs text-muted-foreground">{profile.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => navigate('/profile')}>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate('/settings')}>
-                  <Menu className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={handleLogout}>
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button variant="outline" onClick={() => navigate('/auth')}>
-              Login
-            </Button>
+              ) : null}
+            </>
           )}
         </div>
       </div>
