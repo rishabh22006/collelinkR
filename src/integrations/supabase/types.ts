@@ -738,6 +738,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          college: string | null
           display_name: string
           email: string
           id: string
@@ -745,11 +746,13 @@ export type Database = {
           joined_at: string
           role: Database["public"]["Enums"]["user_role"]
           total_points: number
+          university: string | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          college?: string | null
           display_name: string
           email: string
           id: string
@@ -757,11 +760,13 @@ export type Database = {
           joined_at?: string
           role?: Database["public"]["Enums"]["user_role"]
           total_points?: number
+          university?: string | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          college?: string | null
           display_name?: string
           email?: string
           id?: string
@@ -769,6 +774,7 @@ export type Database = {
           joined_at?: string
           role?: Database["public"]["Enums"]["user_role"]
           total_points?: number
+          university?: string | null
           updated_at?: string | null
         }
         Relationships: []

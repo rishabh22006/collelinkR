@@ -1,38 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Mail, Lock, UserCircle, ArrowRight, ChevronLeft, ChevronRight, School, BookOpen, Users, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-
-import Logo from '@/components/shared/Logo';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { AnimatePresence } from 'framer-motion';
+import FeaturesIntro from '@/components/auth/FeaturesIntro';
+import UniversityForm from '@/components/auth/UniversityForm';
 import { useAuthStore } from '@/stores/authStore';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
+// Define form schemas
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
@@ -41,50 +26,32 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+  confirmPassword: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   displayName: z.string().min(2, { message: 'Display name must be at least 2 characters' }),
-  university: z.string().min(2, { message: 'Please select a university' }),
-  college: z.string().min(2, { message: 'Please enter your college name' }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-// Onboarding steps
-const STEPS = {
-  FEATURES: 0,
-  UNIVERSITY: 1,
-  AUTH: 2
-};
+enum OnboardingStep {
+  FEATURES_INTRO,
+  UNIVERSITY_FORM,
+  AUTH_FORM
+}
 
 const Auth = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
-  const [currentStep, setCurrentStep] = useState(STEPS.FEATURES);
-  const { session, setSession } = useAuthStore();
   const navigate = useNavigate();
+  const { session, checkAuth } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<OnboardingStep>(OnboardingStep.FEATURES_INTRO);
+  const [universityData, setUniversityData] = useState({ university: 'mit-adt', college: '' });
 
-  const universities = [
-    { value: "mit-adt", label: "MIT ADT University" },
-    { value: "other", label: "Other University" }
-  ];
-
+  // Redirect if already logged in
   useEffect(() => {
-    // Check if user is already logged in
     if (session) {
       navigate('/');
     }
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        if (event === 'SIGNED_IN' && newSession) {
-          setSession(newSession);
-          navigate('/');
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [session, navigate, setSession]);
+  }, [session, navigate]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -99,247 +66,101 @@ const Auth = () => {
     defaultValues: {
       email: '',
       password: '',
+      confirmPassword: '',
       displayName: '',
-      university: 'mit-adt',
-      college: '',
     },
   });
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
       if (error) {
-        toast.error('Login failed', {
-          description: error.message,
-        });
-        return;
+        throw error;
       }
 
-      toast.success('Welcome back!');
-    } catch (error) {
-      toast.error('An unexpected error occurred');
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          queryParams: {
-            prompt: 'select_account',
-          },
-          redirectTo: window.location.origin,
-        },
+      // Refresh auth state
+      await checkAuth();
+      navigate('/');
+    } catch (error: any) {
+      toast.error('Login failed', {
+        description: error.message,
       });
-
-      if (error) {
-        toast.error('Google login failed', {
-          description: error.message,
-        });
-      }
-    } catch (error) {
-      toast.error('An unexpected error occurred');
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           data: {
             display_name: values.displayName,
-            university: values.university,
-            college: values.college,
+            university: universityData.university,
+            college: universityData.college,
           },
         },
       });
 
       if (error) {
-        toast.error('Signup failed', {
-          description: error.message,
-        });
-        return;
+        throw error;
       }
 
-      toast.success('Account created!', {
-        description: 'Please check your email to confirm your account.',
+      toast.success('Account created successfully', {
+        description: 'Please check your email for verification',
       });
       
-      // Switch to login tab
-      setActiveTab('login');
+      // Directly sign in after signup (if no email verification is required)
+      await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
       
-    } catch (error) {
-      toast.error('An unexpected error occurred');
-      console.error(error);
+      // Refresh auth state
+      await checkAuth();
+      navigate('/');
+    } catch (error: any) {
+      toast.error('Signup failed', {
+        description: error.message,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const nextStep = () => {
-    setCurrentStep(prev => prev + 1);
+  const handleUniversityFormComplete = (data: { university: string; college: string }) => {
+    setUniversityData(data);
+    setStep(OnboardingStep.AUTH_FORM);
   };
 
-  const prevStep = () => {
-    setCurrentStep(prev => prev - 1);
-  };
-
-  const featureCards = [
-    {
-      icon: <Calendar className="h-12 w-12 text-primary" />,
-      title: "Discover Events",
-      description: "Find and join exciting campus events, workshops, and activities that match your interests."
-    },
-    {
-      icon: <Users className="h-12 w-12 text-primary" />,
-      title: "Join Communities",
-      description: "Connect with like-minded peers through various campus communities and interest groups."
-    },
-    {
-      icon: <BookOpen className="h-12 w-12 text-primary" />,
-      title: "Explore Clubs",
-      description: "Discover and participate in student clubs that enhance your campus experience and skills."
-    }
-  ];
-
+  // Render different steps based on current step
   const renderStep = () => {
-    switch(currentStep) {
-      case STEPS.FEATURES:
+    switch (step) {
+      case OnboardingStep.FEATURES_INTRO:
+        return <FeaturesIntro onContinue={() => setStep(OnboardingStep.UNIVERSITY_FORM)} />;
+      case OnboardingStep.UNIVERSITY_FORM:
+        return <UniversityForm onComplete={handleUniversityFormComplete} />;
+      case OnboardingStep.AUTH_FORM:
         return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-8"
-          >
-            <div className="text-center">
-              <h1 className="text-2xl font-bold">Welcome to ColleLink</h1>
-              <p className="text-muted-foreground mt-2">Your gateway to campus life</p>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-3 sm:grid-cols-2 grid-cols-1">
-              {featureCards.map((card, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                >
-                  <Card className="h-full hover:shadow-md transition-all">
-                    <CardHeader className="text-center">
-                      <div className="mx-auto mb-2">
-                        {card.icon}
-                      </div>
-                      <CardTitle>{card.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground text-sm">{card.description}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-            
-            <div className="flex justify-end">
-              <Button onClick={nextStep} className="gap-2">
-                Continue <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </motion.div>
-        );
-        
-      case STEPS.UNIVERSITY:
-        return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-6"
-          >
-            <div className="text-center">
-              <h1 className="text-2xl font-bold">Tell us about your institution</h1>
-              <p className="text-muted-foreground mt-2">This helps us connect you with relevant communities</p>
-            </div>
-            
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                  <FormLabel>University</FormLabel>
-                  <Select 
-                    defaultValue={signupForm.getValues().university}
-                    onValueChange={(value) => signupForm.setValue('university', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your university" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {universities.map((uni) => (
-                        <SelectItem key={uni.value} value={uni.value}>{uni.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <FormLabel>College</FormLabel>
-                  <Input 
-                    placeholder="Enter your college name"
-                    value={signupForm.getValues().college}
-                    onChange={(e) => signupForm.setValue('college', e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={prevStep} className="gap-2">
-                <ChevronLeft className="h-4 w-4" /> Back
-              </Button>
-              <Button onClick={nextStep} className="gap-2">
-                Continue <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </motion.div>
-        );
-        
-      case STEPS.AUTH:
-        return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold">Create your account</h1>
-              <p className="text-muted-foreground mt-2">Join your campus community</p>
-            </div>
-
-            <div className="bg-card rounded-xl shadow-lg border border-border p-6">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
-                <TabsList className="grid grid-cols-2 mb-6">
+          <Card className="w-full max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Welcome to ColleLink</CardTitle>
+              <CardDescription>Sign in to your account or create a new one</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">Login</TabsTrigger>
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
-
                 <TabsContent value="login">
                   <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
@@ -350,16 +171,12 @@ const Auth = () => {
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="you@example.com" className="pl-10" {...field} />
-                              </div>
+                              <Input placeholder="your.email@example.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
                       <FormField
                         control={loginForm.control}
                         name="password"
@@ -367,66 +184,21 @@ const Auth = () => {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                              </div>
+                              <Input type="password" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
                       <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? 'Logging in...' : 'Login'}
-                      </Button>
-                      
-                      <div className="relative my-4">
-                        <Separator />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        type="button"
-                        variant="outline"
-                        className="w-full flex items-center justify-center gap-2"
-                        onClick={handleGoogleSignIn}
-                        disabled={isLoading}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M15.5453 6.54545H8.00001V9.63636H12.3093C11.9502 11.6 10.2047 12.7273 8.00001 12.7273C5.38183 12.7273 3.27274 10.6182 3.27274 8C3.27274 5.38182 5.38183 3.27273 8.00001 3.27273C9.2411 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00001 0C3.58183 0 0 3.58182 0 8C0 12.4182 3.58183 16 8.00001 16C12.0502 16 15.2729 13.0909 15.2729 8C15.2729 7.52727 15.5453 6.54545 15.5453 6.54545Z" fill="#FFC107"/>
-                          <path d="M0.89093 4.27273L3.58184 6.30909C4.28912 4.58182 5.9891 3.27273 8.00002 3.27273C9.24112 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00002 0C4.89093 0 2.10911 1.72727 0.89093 4.27273Z" fill="#FF3D00"/>
-                          <path d="M8.00001 16C10.1182 16 12.0045 15.1636 13.4227 13.8636L10.8727 11.7273C10.0773 12.3091 9.09093 12.7273 8.00001 12.7273C5.8091 12.7273 3.9091 11.6 3.54547 10.0182L0.836374 12.0727C2.03638 14.4909 4.83638 16 8.00001 16Z" fill="#4CAF50"/>
-                          <path d="M15.5452 6.54545H8V9.63636H12.3091C12.1408 10.5455 11.6409 11.3273 10.9454 11.9273L10.9682 11.9091L13.5182 14.0455C13.3636 14.1818 15.2727 12.5455 15.2727 8C15.2727 7.52727 15.5452 6.54545 15.5452 6.54545Z" fill="#1976D2"/>
-                        </svg>
-                        Continue with Google
                       </Button>
                     </form>
                   </Form>
                 </TabsContent>
-
                 <TabsContent value="signup">
                   <Form {...signupForm}>
                     <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
-                      <FormField
-                        control={signupForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="you@example.com" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
                       <FormField
                         control={signupForm.control}
                         name="displayName"
@@ -434,56 +206,25 @@ const Auth = () => {
                           <FormItem>
                             <FormLabel>Display Name</FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <UserCircle className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="John Doe" className="pl-10" {...field} />
-                              </div>
+                              <Input placeholder="Your Name" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
                       <FormField
                         control={signupForm.control}
-                        name="university"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>University</FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select your university" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {universities.map((uni) => (
-                                  <SelectItem key={uni.value} value={uni.value}>{uni.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={signupForm.control}
-                        name="college"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>College</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your college name" {...field} />
+                              <Input placeholder="your.email@example.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
                       <FormField
                         control={signupForm.control}
                         name="password"
@@ -491,83 +232,49 @@ const Auth = () => {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                              </div>
+                              <Input type="password" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
+                      <FormField
+                        control={signupForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="text-sm text-muted-foreground mb-2">
+                        <p>University: {universityData.university}</p>
+                        <p>College: {universityData.college}</p>
+                      </div>
                       <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? 'Creating account...' : 'Sign Up'}
-                      </Button>
-                      
-                      <div className="relative my-4">
-                        <Separator />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        type="button"
-                        variant="outline"
-                        className="w-full flex items-center justify-center gap-2"
-                        onClick={handleGoogleSignIn}
-                        disabled={isLoading}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M15.5453 6.54545H8.00001V9.63636H12.3093C11.9502 11.6 10.2047 12.7273 8.00001 12.7273C5.38183 12.7273 3.27274 10.6182 3.27274 8C3.27274 5.38182 5.38183 3.27273 8.00001 3.27273C9.2411 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00001 0C3.58183 0 0 3.58182 0 8C0 12.4182 3.58183 16 8.00001 16C12.0502 16 15.2729 13.0909 15.2729 8C15.2729 7.52727 15.5453 6.54545 15.5453 6.54545Z" fill="#FFC107"/>
-                          <path d="M0.89093 4.27273L3.58184 6.30909C4.28912 4.58182 5.9891 3.27273 8.00002 3.27273C9.24112 3.27273 10.3638 3.76364 11.2047 4.53636L13.5273 2.21818C12.0956 0.872727 10.1638 0 8.00002 0C4.89093 0 2.10911 1.72727 0.89093 4.27273Z" fill="#FF3D00"/>
-                          <path d="M8.00001 16C10.1182 16 12.0045 15.1636 13.4227 13.8636L10.8727 11.7273C10.0773 12.3091 9.09093 12.7273 8.00001 12.7273C5.8091 12.7273 3.9091 11.6 3.54547 10.0182L0.836374 12.0727C2.03638 14.4909 4.83638 16 8.00001 16Z" fill="#4CAF50"/>
-                          <path d="M15.5452 6.54545H8V9.63636H12.3091C12.1408 10.5455 11.6409 11.3273 10.9454 11.9273L10.9682 11.9091L13.5182 14.0455C13.3636 14.1818 15.2727 12.5455 15.2727 8C15.2727 7.52727 15.5452 6.54545 15.5452 6.54545Z" fill="#1976D2"/>
-                        </svg>
-                        Continue with Google
                       </Button>
                     </form>
                   </Form>
                 </TabsContent>
               </Tabs>
-            </div>
-
-            <div className="mt-6 text-center">
-              <Button variant="ghost" onClick={prevStep} size="sm" className="gap-2">
-                <ChevronLeft className="h-4 w-4" /> Back to institution details
-              </Button>
-            </div>
-          </motion.div>
+            </CardContent>
+          </Card>
         );
-      
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background/95">
-      <motion.div
-        className="w-full max-w-3xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="text-center mb-8">
-          <Logo size="lg" className="mx-auto mb-4" />
-        </div>
-
-        <AnimatePresence mode="wait">
-          {renderStep()}
-        </AnimatePresence>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            By continuing, you agree to our Terms of Service and Privacy Policy.
-          </p>
-        </div>
-      </motion.div>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+      <AnimatePresence mode="wait">
+        {renderStep()}
+      </AnimatePresence>
     </div>
   );
 };
