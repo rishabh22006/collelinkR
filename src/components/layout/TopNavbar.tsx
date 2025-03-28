@@ -9,6 +9,7 @@ import Logo from '@/components/shared/Logo';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Badge } from '@/components/ui/badge';
+import MainNavigationMenu from './NavigationMenu';
 
 const TopNavbar = () => {
   const navigate = useNavigate();
@@ -36,10 +37,15 @@ const TopNavbar = () => {
   return (
     <header className="bg-background border-b sticky top-0 z-50">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="mr-6">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="mr-2">
             <Logo size="md" />
           </Link>
+          
+          {/* Add the navigation menu here */}
+          <div className="hidden md:flex">
+            <MainNavigationMenu />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

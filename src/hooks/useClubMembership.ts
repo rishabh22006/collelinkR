@@ -3,48 +3,35 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { ClubMember, ClubMembershipStatus } from './useClubTypes';
+import { ClubMembershipStatus } from './useClubTypes';
 
 /**
- * Hook for managing club membership
+ * Hook for club membership functionality
  */
 export const useClubMembership = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
 
-  // Check if user is a club member
-  const isClubMember = async (clubId: string): Promise<boolean> => {
-    if (!profile?.id) return false;
+  // Get membership status (is member and is admin)
+  const getClubMembershipStatus = async (clubId: string): Promise<ClubMembershipStatus> => {
+    if (!profile?.id) {
+      return { isMember: false, isAdmin: false };
+    }
 
     try {
-      // Using RPC function since we don't have direct table access
-      const { data, error } = await supabase
+      // Check if user is a member
+      const { data: isMember, error: memberError } = await supabase
         .rpc('is_club_member', { 
           club_uuid: clubId, 
           user_uuid: profile.id 
         });
 
-      if (error) {
-        console.error('Error checking club membership:', error);
-        return false;
+      if (memberError) {
+        console.error('Error checking club membership:', memberError);
+        return { isMember: false, isAdmin: false };
       }
 
-      return !!data;
-    } catch (err) {
-      console.error('Failed to check club membership:', err);
-      return false;
-    }
-  };
-
-  // Get membership status (combining member and admin checks for efficiency)
-  const getMembershipStatus = async (clubId: string): Promise<ClubMembershipStatus> => {
-    if (!profile?.id) return { isMember: false, isAdmin: false };
-    
-    try {
-      // First check membership
-      const membershipResult = await isClubMember(clubId);
-      
-      // Check admin status
+      // Check if user is an admin
       const { data: isAdmin, error: adminError } = await supabase
         .rpc('is_club_admin', { 
           club_uuid: clubId, 
@@ -53,15 +40,15 @@ export const useClubMembership = () => {
 
       if (adminError) {
         console.error('Error checking club admin status:', adminError);
-        return { isMember: membershipResult, isAdmin: false };
+        return { isMember: !!isMember, isAdmin: false };
       }
 
       return { 
-        isMember: membershipResult, 
+        isMember: !!isMember, 
         isAdmin: !!isAdmin 
       };
     } catch (err) {
-      console.error('Failed to check membership status:', err);
+      console.error('Failed to check club membership status:', err);
       return { isMember: false, isAdmin: false };
     }
   };
@@ -84,7 +71,7 @@ export const useClubMembership = () => {
           throw error;
         }
 
-        return data as ClubMember;
+        return data;
       } catch (err) {
         console.error('Failed to join club:', err);
         throw err;
@@ -95,7 +82,7 @@ export const useClubMembership = () => {
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
     },
     onError: (error: Error) => {
-      toast.error('Failed to join club', {
+      toast.error('Failed to join the club', {
         description: error.message,
       });
     },
@@ -130,15 +117,14 @@ export const useClubMembership = () => {
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
     },
     onError: (error: Error) => {
-      toast.error('Failed to leave club', {
+      toast.error('Failed to leave the club', {
         description: error.message,
       });
     },
   });
 
   return {
-    isClubMember,
-    getMembershipStatus,
+    getClubMembershipStatus,
     joinClub,
     leaveClub,
   };

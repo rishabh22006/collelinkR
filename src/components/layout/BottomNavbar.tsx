@@ -13,7 +13,7 @@ const BottomNavbar = () => {
     { name: 'Home', path: '/', icon: Home },
     { name: 'Search', path: '/search', icon: Search },
     { name: 'Clubs & Communities', path: '/clubs', icon: UsersRound },
-    { name: 'Calendar', path: '/calendar', icon: Calendar },
+    { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Leaderboard', path: '/leaderboard', icon: Medal },
   ];
@@ -21,6 +21,10 @@ const BottomNavbar = () => {
   const isActive = (path: string) => {
     // Special case for communities and clubs to highlight the same tab
     if (path === '/clubs' && (location.pathname === '/clubs' || location.pathname === '/communities')) {
+      return true;
+    }
+    // Special case for events and calendar to highlight the same tab
+    if (path === '/events' && (location.pathname === '/events' || location.pathname === '/calendar')) {
       return true;
     }
     return location.pathname === path;

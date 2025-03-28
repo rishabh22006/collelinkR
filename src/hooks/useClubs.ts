@@ -1,38 +1,52 @@
 
 import { useClubQuery } from './useClubQuery';
-import { useClubMembership } from './useClubMembership';
 import { useClubAdmin } from './useClubAdmin';
-import { Club, ClubMember, ClubAdmin } from './useClubTypes';
+import { useClubMembership } from './useClubMembership';
+import { Club, ClubDetails, ClubMembershipStatus } from './useClubTypes';
 
-// Export type definitions
-export type { Club, ClubMember, ClubAdmin };
+export type { Club, ClubDetails, ClubMembershipStatus };
 
-/**
- * Main hook that composes all club-related functionality
- */
 export const useClubs = () => {
-  const clubQuery = useClubQuery();
-  const clubMembership = useClubMembership();
-  const clubAdmin = useClubAdmin();
+  // Combine query, admin and membership functionality
+  const {
+    clubs,
+    featuredClubs,
+    isLoading,
+    isFeaturedLoading,
+    error,
+    refetch,
+    getClub,
+  } = useClubQuery();
 
+  const {
+    isClubAdmin,
+    createClub,
+  } = useClubAdmin();
+
+  const {
+    joinClub,
+    leaveClub,
+    getClubMembershipStatus,
+  } = useClubMembership();
+
+  // Return all functionality from all hooks
   return {
-    // From useClubQuery
-    clubs: clubQuery.clubs,
-    featuredClubs: clubQuery.featuredClubs,
-    isLoading: clubQuery.isLoading,
-    isFeaturedLoading: clubQuery.isFeaturedLoading,
-    error: clubQuery.error,
-    refetch: clubQuery.refetch,
-    getClub: clubQuery.getClub,
-
-    // From useClubMembership
-    isClubMember: clubMembership.isClubMember,
-    getMembershipStatus: clubMembership.getMembershipStatus,
-    joinClub: clubMembership.joinClub,
-    leaveClub: clubMembership.leaveClub,
-
-    // From useClubAdmin
-    isClubAdmin: clubAdmin.isClubAdmin,
-    createClub: clubAdmin.createClub,
+    // Club queries
+    clubs,
+    featuredClubs,
+    isLoading,
+    isFeaturedLoading,
+    error,
+    refetch,
+    getClub,
+    
+    // Admin functionality
+    isClubAdmin,
+    createClub,
+    
+    // Membership management
+    joinClub,
+    leaveClub,
+    getClubMembershipStatus,
   };
 };
