@@ -17,11 +17,9 @@ export const useClubQuery = () => {
     queryKey: ['clubs'],
     queryFn: async () => {
       try {
-        // We need to use raw SQL query since the clubs table is not properly
-        // recognized in the TypeScript definitions
+        // We need to use raw SQL query since we don't have direct TS types for clubs
         const { data, error } = await supabase
-          .from('clubs')
-          .select('*')
+          .rpc('get_all_clubs')
           .order('name');
 
         if (error) {
@@ -46,10 +44,7 @@ export const useClubQuery = () => {
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from('clubs')
-          .select('*')
-          .eq('is_featured', true)
-          .order('name');
+          .rpc('get_featured_clubs');
 
         if (error) {
           console.error('Error fetching featured clubs:', error);
@@ -68,10 +63,7 @@ export const useClubQuery = () => {
   const getClub = async (clubId: string): Promise<ClubDetails | null> => {
     try {
       const { data, error } = await supabase
-        .from('clubs')
-        .select('*')
-        .eq('id', clubId)
-        .single();
+        .rpc('get_club_details', { club_uuid: clubId });
 
       if (error) {
         console.error('Error fetching club:', error);

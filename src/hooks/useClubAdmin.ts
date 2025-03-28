@@ -50,45 +50,22 @@ export const useClubAdmin = () => {
       }
 
       try {
-        // First create the club
-        const { data: club, error: clubError } = await supabase
-          .from('clubs')
-          .insert(clubData)
-          .select()
-          .single();
-
-        if (clubError) {
-          throw clubError;
-        }
-
-        // Then add the creator as an admin
-        const { error: adminError } = await supabase
-          .from('club_admins')
-          .insert({
-            club_id: club.id,
-            user_id: profile.id,
+        // Use RPC function to create club and manage all related tasks
+        const { data, error } = await supabase
+          .rpc('create_club', { 
+            club_name: clubData.name,
+            club_description: clubData.description || null,
+            club_institution: clubData.institution || null, 
+            club_logo_url: clubData.logo_url || null,
+            club_banner_url: clubData.banner_url || null,
+            creator_id: profile.id
           });
 
-        if (adminError) {
-          // If admin creation fails, we need to delete the club
-          await supabase.from('clubs').delete().eq('id', club.id);
-          throw adminError;
+        if (error) {
+          throw error;
         }
 
-        // Also add the creator as a member
-        const { error: memberError } = await supabase
-          .from('club_members')
-          .insert({
-            club_id: club.id,
-            user_id: profile.id,
-          });
-
-        if (memberError) {
-          console.error('Error adding creator as member:', memberError);
-          // Not critical, don't throw error
-        }
-
-        return club as Club;
+        return data as Club;
       } catch (err) {
         console.error('Failed to create club:', err);
         throw err;

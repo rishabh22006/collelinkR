@@ -82,7 +82,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
       >
         <div className="sticky top-0 bg-card border-b p-4 flex justify-between items-center">
           <h2 className="font-semibold">Event Details</h2>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedEvent(null)}>
+          <Button variant="ghost" size="sm" onClick={onClose}>
             ✕
           </Button>
         </div>
@@ -90,48 +90,48 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         <div className="p-4">
           <div className="mb-6">
             <div className="flex justify-between mb-2">
-              <Badge className={`${getCategoryColor(selectedEvent.category).bg} ${getCategoryColor(selectedEvent.category).text}`}>
-                {selectedEvent.category}
+              <Badge className={`${getCategoryColor(localSelectedEvent.category).bg} ${getCategoryColor(localSelectedEvent.category).text}`}>
+                {localSelectedEvent.category}
               </Badge>
               <div className="flex items-center">
                 <Bell size={14} className="mr-1 text-muted-foreground" />
                 <Switch 
-                  checked={!!reminders[selectedEvent.id]} 
-                  onCheckedChange={() => toggleReminder(selectedEvent.id)}
+                  checked={!!reminders[localSelectedEvent.id]} 
+                  onCheckedChange={() => toggleReminder(localSelectedEvent.id)}
                 />
               </div>
             </div>
-            <h3 className="text-xl font-bold mb-2">{selectedEvent.title}</h3>
+            <h3 className="text-xl font-bold mb-2">{localSelectedEvent.title}</h3>
             <p className="text-muted-foreground text-sm mb-4">
-              {selectedEvent.description || 'No description available'}
+              {localSelectedEvent.description || 'No description available'}
             </p>
             
             <div className="space-y-3">
               <div className="flex items-center text-sm">
                 <CalendarIcon size={16} className="mr-2 text-primary" />
-                <span>{format(new Date(selectedEvent.date), 'EEEE, MMMM d, yyyy')}</span>
+                <span>{format(new Date(localSelectedEvent.date), 'EEEE, MMMM d, yyyy')}</span>
               </div>
               <div className="flex items-center text-sm">
                 <Clock size={16} className="mr-2 text-primary" />
-                <span>{formatEventTime(selectedEvent.date)}</span>
-                {selectedEvent.end_date && (
-                  <span> - {formatEventTime(selectedEvent.end_date)}</span>
+                <span>{formatEventTime(localSelectedEvent.date)}</span>
+                {localSelectedEvent.end_date && (
+                  <span> - {formatEventTime(localSelectedEvent.end_date)}</span>
                 )}
               </div>
-              {selectedEvent.location && (
+              {localSelectedEvent.location && (
                 <div className="flex items-center text-sm">
                   <MapPin size={16} className="mr-2 text-primary" />
-                  <span>{selectedEvent.location}</span>
+                  <span>{localSelectedEvent.location}</span>
                 </div>
               )}
             </div>
           </div>
           
-          {selectedEvent.image_url && (
+          {localSelectedEvent.image_url && (
             <div className="mb-6">
               <img 
-                src={selectedEvent.image_url} 
-                alt={selectedEvent.title} 
+                src={localSelectedEvent.image_url} 
+                alt={localSelectedEvent.title} 
                 className="w-full h-48 object-cover rounded-lg"
               />
             </div>
@@ -143,18 +143,18 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               variant="outline"
               onClick={() => {
                 // Generate calendar file (basic implementation)
-                const eventStart = new Date(selectedEvent.date);
-                const eventEnd = selectedEvent.end_date 
-                  ? new Date(selectedEvent.end_date) 
+                const eventStart = new Date(localSelectedEvent.date);
+                const eventEnd = localSelectedEvent.end_date 
+                  ? new Date(localSelectedEvent.end_date) 
                   : new Date(eventStart.getTime() + 60*60*1000); // 1 hour default
                   
                 const icsContent = [
                   'BEGIN:VCALENDAR',
                   'VERSION:2.0',
                   'BEGIN:VEVENT',
-                  `SUMMARY:${selectedEvent.title}`,
-                  `LOCATION:${selectedEvent.location || ''}`,
-                  `DESCRIPTION:${selectedEvent.description || ''}`,
+                  `SUMMARY:${localSelectedEvent.title}`,
+                  `LOCATION:${localSelectedEvent.location || ''}`,
+                  `DESCRIPTION:${localSelectedEvent.description || ''}`,
                   `DTSTART:${format(eventStart, 'yyyyMMdd\'T\'HHmmss')}`,
                   `DTEND:${format(eventEnd, 'yyyyMMdd\'T\'HHmmss')}`,
                   'END:VEVENT',
@@ -165,7 +165,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `${selectedEvent.title.replace(/\s+/g, '-')}.ics`;
+                link.download = `${localSelectedEvent.title.replace(/\s+/g, '-')}.ics`;
                 link.click();
                 
                 toast.success('Calendar event downloaded');
@@ -175,7 +175,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             </Button>
             <Button 
               className="w-full"
-              onClick={() => setSelectedEvent(null)}
+              onClick={onClose}
             >
               Close
             </Button>

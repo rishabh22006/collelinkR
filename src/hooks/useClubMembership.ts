@@ -17,14 +17,12 @@ export const useClubMembership = () => {
     if (!profile?.id) return false;
 
     try {
-      // Using raw SQL query since the club_members table is not properly
-      // recognized in the TypeScript definitions
+      // Using RPC function since we don't have direct table access
       const { data, error } = await supabase
-        .from('club_members')
-        .select('*')
-        .eq('club_id', clubId)
-        .eq('user_id', profile.id)
-        .maybeSingle();
+        .rpc('is_club_member', { 
+          club_uuid: clubId, 
+          user_uuid: profile.id 
+        });
 
       if (error) {
         console.error('Error checking club membership:', error);
@@ -77,13 +75,10 @@ export const useClubMembership = () => {
 
       try {
         const { data, error } = await supabase
-          .from('club_members')
-          .insert({
-            club_id: clubId,
-            user_id: profile.id,
-          })
-          .select()
-          .single();
+          .rpc('join_club', { 
+            club_uuid: clubId, 
+            user_uuid: profile.id 
+          });
 
         if (error) {
           throw error;
@@ -115,10 +110,10 @@ export const useClubMembership = () => {
 
       try {
         const { data, error } = await supabase
-          .from('club_members')
-          .delete()
-          .match({ club_id: clubId, user_id: profile.id })
-          .select();
+          .rpc('leave_club', { 
+            club_uuid: clubId, 
+            user_uuid: profile.id 
+          });
 
         if (error) {
           throw error;

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowLeft, Users, UserPlus, CalendarPlus, Award, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,9 +15,10 @@ export interface CommunityDetailViewProps {
   isOpen: boolean;
   onClose: () => void;
   onJoinToggle: (e?: React.MouseEvent) => void;
+  isJoined?: boolean;
 }
 
-const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle }: CommunityDetailViewProps) => {
+const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoined }: CommunityDetailViewProps) => {
   const navigate = useNavigate();
   const [showEventForm, setShowEventForm] = useState(false);
   
@@ -42,7 +42,7 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle }: Com
     isJoined: true
   };
   
-  const isMember = community.isJoined;
+  const isMember = isJoined ?? community.isJoined;
   const isAdmin = true; // Replace with actual check
   
   const joinCommunity = () => {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowLeft, Users, UserPlus, CalendarPlus, Award, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -18,9 +17,10 @@ export interface ClubDetailViewProps {
   isOpen: boolean;
   onClose: () => void;
   onJoinToggle: (e?: React.MouseEvent) => void;
+  isJoined?: boolean;
 }
 
-const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle }: ClubDetailViewProps) => {
+const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: ClubDetailViewProps) => {
   const navigate = useNavigate();
   const { profile } = useAuthStore();
   const [showEventForm, setShowEventForm] = useState(false);
@@ -46,7 +46,7 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle }: ClubDetailVie
   };
   
   const isAdmin = true; // Replace with actual check
-  const isMember = club.isJoined; // Use isJoined from club object
+  const isMember = isJoined; // Use isJoined from club object
   
   const joinClub = () => {
     onJoinToggle();
