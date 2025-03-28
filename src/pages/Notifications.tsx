@@ -12,89 +12,33 @@ import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
-
-// Mock notification data
-const mockNotifications = [
-  {
-    id: "1",
-    type: "message",
-    title: "New message",
-    content: "Alex Johnson sent you a message",
-    sender: {
-      id: "user1",
-      name: "Alex Johnson",
-      avatar: null,
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    read: false,
-  },
-  {
-    id: "2",
-    type: "event",
-    title: "Upcoming event",
-    content: "CS Club Meeting starts in 1 hour",
-    relatedId: "event1",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    read: false,
-  },
-  {
-    id: "3",
-    type: "like",
-    title: "Post liked",
-    content: "Jamie Williams liked your post",
-    sender: {
-      id: "user2",
-      name: "Jamie Williams",
-      avatar: null,
-    },
-    relatedId: "post1",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    read: true,
-  },
-  {
-    id: "4",
-    type: "achievement",
-    title: "New certificate",
-    content: "You earned a Leadership Certificate",
-    relatedId: "cert1",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-  },
-  {
-    id: "5",
-    type: "friend",
-    title: "New friend request",
-    content: "Morgan Davis wants to connect",
-    sender: {
-      id: "user3",
-      name: "Morgan Davis",
-      avatar: null,
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    read: true,
-  },
-];
+import { useNotifications } from '@/hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
 
 const Notifications = () => {
   const { profile } = useAuthStore();
   const [activeTab, setActiveTab] = useState('all');
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const navigate = useNavigate();
   
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead
+  } = useNotifications();
   
   const filteredNotifications = () => {
     if (activeTab === 'all') return notifications;
     return notifications.filter(n => !n.read);
   };
   
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const handleMarkAsRead = (id: string) => {
+    markAsRead.mutate(id);
   };
   
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = () => {
+    markAllAsRead.mutate();
   };
   
   const getNotificationIcon = (type: string) => {
@@ -114,16 +58,31 @@ const Notifications = () => {
     }
   };
   
-  const getTimeString = (date: Date) => {
+  const getTimeString = (date: string) => {
+    const dateObj = new Date(date);
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const diffInDays = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffInDays < 1) {
-      return formatDistanceToNow(date, { addSuffix: true });
+      return formatDistanceToNow(dateObj, { addSuffix: true });
     } else if (diffInDays < 7) {
-      return format(date, 'EEEE');
+      return format(dateObj, 'EEEE');
     } else {
-      return format(date, 'MMM d');
+      return format(dateObj, 'MMM d');
+    }
+  };
+
+  const handleNotificationClick = (notification: typeof notifications[0]) => {
+    // Mark as read
+    handleMarkAsRead(notification.id);
+    
+    // Navigate based on notification type
+    if (notification.type === 'message' && notification.related_id) {
+      navigate('/messages', { state: { chatId: notification.related_id } });
+    } else if (notification.type === 'event' && notification.related_id) {
+      navigate('/events');
+    } else if (notification.type === 'friend' && notification.sender_id) {
+      navigate('/profile', { state: { userId: notification.sender_id } });
     }
   };
   
@@ -141,7 +100,7 @@ const Notifications = () => {
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold">Notifications</h1>
             {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={markAllAsRead}>
+              <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
                 Mark all as read
               </Button>
             )}
@@ -197,6 +156,14 @@ const Notifications = () => {
   function renderNotifications() {
     const notificationsToShow = filteredNotifications();
     
+    if (isLoading) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+    
     if (notificationsToShow.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -218,19 +185,19 @@ const Notifications = () => {
           "flex items-start p-4 cursor-pointer hover:bg-muted/50 transition-colors",
           !notification.read && "border-l-4 border-l-primary"
         )}
-        onClick={() => markAsRead(notification.id)}
+        onClick={() => handleNotificationClick(notification)}
       >
         <div className={cn(
           "flex items-center justify-center w-10 h-10 rounded-full mr-3",
           !notification.read ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
         )}>
-          {notification.sender ? (
+          {notification.sender_id ? (
             <Avatar className="h-10 w-10">
-              <AvatarImage src={notification.sender.avatar || ""} />
+              <AvatarImage src={""} /> {/* Will be populated from sender profile */}
               <AvatarFallback className={cn(
                 !notification.read ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
               )}>
-                {notification.sender.name.charAt(0)}
+                {notification.title.charAt(0)}
               </AvatarFallback>
             </Avatar>
           ) : (
@@ -251,7 +218,7 @@ const Notifications = () => {
             </div>
             <div className="flex flex-col items-end ml-4">
               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {getTimeString(notification.createdAt)}
+                {getTimeString(notification.created_at)}
               </span>
               {!notification.read && (
                 <Badge variant="default" className="mt-1 h-2 w-2 p-0 rounded-full bg-primary" />

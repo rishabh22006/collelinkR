@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
+import { createNotification } from './useNotifications';
 
 export interface Chat {
   id: string;
@@ -48,7 +48,7 @@ export const useChat = () => {
 
   // Subscribe to chat messages
   useEffect(() => {
-    if (!currentChat) return;
+    if (!currentChat || !profile) return;
 
     const channel = supabase
       .channel('chat-messages')
@@ -60,9 +60,36 @@ export const useChat = () => {
           table: 'chat_messages',
           filter: `chat_id=eq.${currentChat}`,
         },
-        (payload) => {
+        async (payload) => {
           const newMessage = payload.new as Message;
           setMessages((prev) => [...prev, newMessage]);
+          
+          // If the message is not from the current user, mark it as read
+          if (newMessage.sender_id !== profile.id) {
+            // Create notification for new message
+            try {
+              // Find the sender's profile to get their name
+              const { data: senderData } = await supabase
+                .from('profiles')
+                .select('display_name')
+                .eq('id', newMessage.sender_id)
+                .single();
+              
+              const senderName = senderData?.display_name || 'Someone';
+              
+              // Create notification
+              await createNotification({
+                userId: profile.id,
+                title: 'New message',
+                content: `${senderName} sent you a message: ${newMessage.content.substring(0, 50)}${newMessage.content.length > 50 ? '...' : ''}`,
+                type: 'message',
+                senderId: newMessage.sender_id,
+                relatedId: currentChat
+              });
+            } catch (error) {
+              console.error('Error creating notification:', error);
+            }
+          }
         }
       )
       .subscribe();
@@ -70,7 +97,7 @@ export const useChat = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentChat]);
+  }, [currentChat, profile]);
 
   // Load chats for the current user
   const loadChats = async () => {
