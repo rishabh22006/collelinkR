@@ -10,6 +10,8 @@ type Profile = {
   email: string;
   avatar_url: string | null;
   institution: string | null;
+  university: string | null;
+  college: string | null;
   bio: string | null;
   role: 'admin' | 'moderator' | 'user';
   joined_at?: string;

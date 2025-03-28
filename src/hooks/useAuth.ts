@@ -40,6 +40,10 @@ export const useAuth = () => {
     isAdmin: profile?.role === 'admin',
     isModerator: profile?.role === 'moderator',
     signOut,
+    // Add university related helpers
+    university: profile?.university || 'mit-adt',
+    college: profile?.college || '',
+    hasUniversityInfo: !!(profile?.university && profile?.college)
   };
 };
 
