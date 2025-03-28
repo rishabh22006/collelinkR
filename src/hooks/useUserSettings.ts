@@ -102,7 +102,7 @@ export const useUserSettings = () => {
       user_id: profile.id,
       theme: defaultSettings.theme,
       language: defaultSettings.language,
-      notifications: defaultSettings.notifications as unknown as JSON // Cast to JSON for database compatibility
+      notifications: JSON.stringify(defaultSettings.notifications) // Convert to JSON string for database
     };
     
     const { data, error } = await supabase
@@ -125,7 +125,7 @@ export const useUserSettings = () => {
       const dataToUpdate: any = {};
       if (updatedSettings.theme) dataToUpdate.theme = updatedSettings.theme;
       if (updatedSettings.language) dataToUpdate.language = updatedSettings.language;
-      if (updatedSettings.notifications) dataToUpdate.notifications = updatedSettings.notifications;
+      if (updatedSettings.notifications) dataToUpdate.notifications = JSON.stringify(updatedSettings.notifications);
 
       const { data, error } = await supabase
         .from('user_settings')
@@ -162,7 +162,7 @@ export const useUserSettings = () => {
       const { data, error } = await supabase
         .from('user_settings')
         .update({
-          notifications: updatedNotifications
+          notifications: JSON.stringify(updatedNotifications)
         })
         .eq('id', settings.id)
         .select()
