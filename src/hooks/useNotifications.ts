@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
@@ -18,11 +17,46 @@ export interface Notification {
 
 export type NotificationCategory = 'all' | 'unread' | 'messages' | 'events' | 'clubs' | 'communities' | 'other';
 
+export const createNotification = async ({
+  userId,
+  title,
+  content,
+  type,
+  senderId = null,
+  relatedId = null
+}: {
+  userId: string;
+  title: string;
+  content: string;
+  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
+  senderId?: string | null;
+  relatedId?: string | null;
+}) => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      title,
+      content,
+      type,
+      sender_id: senderId,
+      related_id: relatedId,
+      read: false
+    })
+    .select();
+
+  if (error) {
+    console.error('Error creating notification:', error);
+    throw error;
+  }
+
+  return data[0] as Notification;
+};
+
 export const useNotifications = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
 
-  // Get user notifications
   const {
     data: notifications = [],
     isLoading,
@@ -49,7 +83,6 @@ export const useNotifications = () => {
     enabled: !!profile?.id,
   });
 
-  // Get notifications by category
   const getNotificationsByCategory = (category: NotificationCategory) => {
     if (category === 'all') return notifications;
     if (category === 'unread') return notifications.filter(n => !n.read);
@@ -65,10 +98,8 @@ export const useNotifications = () => {
     return [];
   };
 
-  // Get unread notification count
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Mark notification as read
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
       const { data, error } = await supabase
@@ -88,7 +119,6 @@ export const useNotifications = () => {
     },
   });
 
-  // Mark all notifications as read
   const markAllAsRead = useMutation({
     mutationFn: async () => {
       if (!profile?.id) return null;
@@ -111,7 +141,6 @@ export const useNotifications = () => {
     },
   });
 
-  // Subscribe to real-time notifications
   useEffect(() => {
     if (!profile?.id) return;
 
