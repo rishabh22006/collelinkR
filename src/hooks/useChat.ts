@@ -46,9 +46,9 @@ export const useChat = () => {
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Subscribe to chat messages
+  // Set up real-time subscription for new notifications
   useEffect(() => {
-    if (!currentChat || !profile) return;
+    if (!profile?.id) return;
 
     const channel = supabase
       .channel('chat-messages')
@@ -64,7 +64,7 @@ export const useChat = () => {
           const newMessage = payload.new as Message;
           setMessages((prev) => [...prev, newMessage]);
           
-          // If the message is not from the current user, mark it as read
+          // If the message is not from the current user, create a notification
           if (newMessage.sender_id !== profile.id) {
             // Create notification for new message
             try {

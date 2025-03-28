@@ -617,6 +617,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          related_id: string | null
+          sender_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          related_id?: string | null
+          sender_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          related_id?: string | null
+          sender_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       point_rules: {
         Row: {
           certificate_type: Database["public"]["Enums"]["certificate_type"]
@@ -752,6 +788,36 @@ export type Database = {
           created_at?: string
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          notifications: Json
+          theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          notifications?: Json
+          theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          notifications?: Json
+          theme?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

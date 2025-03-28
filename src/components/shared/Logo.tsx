@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface LogoProps {
+export interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }

@@ -25,7 +25,7 @@ const TopNavbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
           <Link to="/" className="mr-6">
-            <Logo height={32} />
+            <Logo size="md" />
           </Link>
         </div>
 
