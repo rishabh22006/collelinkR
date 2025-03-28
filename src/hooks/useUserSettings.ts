@@ -23,6 +23,17 @@ export interface UserSettings {
   updated_at: string;
 }
 
+// Type for database rows that have JSON fields
+interface UserSettingsRow {
+  id: string;
+  user_id: string;
+  theme: string;
+  language: string;
+  notifications: any; // This is a JSONB field in the database
+  created_at: string;
+  updated_at: string;
+}
+
 export const useUserSettings = () => {
   const { profile } = useAuthStore();
   const queryClient = useQueryClient();
@@ -39,6 +50,19 @@ export const useUserSettings = () => {
       likes: true,
       systemUpdates: true,
     },
+  };
+
+  // Convert database row to UserSettings object
+  const mapRowToSettings = (row: UserSettingsRow): UserSettings => {
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      theme: row.theme as 'light' | 'dark' | 'system',
+      language: row.language,
+      notifications: row.notifications as NotificationSettings,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    };
   };
 
   // Fetch user settings
@@ -65,7 +89,7 @@ export const useUserSettings = () => {
         return createDefaultSettings();
       }
       
-      return data as UserSettings;
+      return mapRowToSettings(data as UserSettingsRow);
     },
     enabled: !!profile?.id
   });
@@ -76,7 +100,9 @@ export const useUserSettings = () => {
     
     const newSettings = {
       user_id: profile.id,
-      ...defaultSettings
+      theme: defaultSettings.theme,
+      language: defaultSettings.language,
+      notifications: defaultSettings.notifications
     };
     
     const { data, error } = await supabase
@@ -87,7 +113,7 @@ export const useUserSettings = () => {
       
     if (error) throw error;
     
-    return data as UserSettings;
+    return mapRowToSettings(data as UserSettingsRow);
   };
 
   // Update user settings
@@ -95,15 +121,21 @@ export const useUserSettings = () => {
     mutationFn: async (updatedSettings: Partial<UserSettings>) => {
       if (!profile || !settings) throw new Error('User not authenticated or settings not loaded');
 
+      // Only send fields we're allowed to update to the database
+      const dataToUpdate: any = {};
+      if (updatedSettings.theme) dataToUpdate.theme = updatedSettings.theme;
+      if (updatedSettings.language) dataToUpdate.language = updatedSettings.language;
+      if (updatedSettings.notifications) dataToUpdate.notifications = updatedSettings.notifications;
+
       const { data, error } = await supabase
         .from('user_settings')
-        .update(updatedSettings)
+        .update(dataToUpdate)
         .eq('id', settings.id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as UserSettings;
+      return mapRowToSettings(data as UserSettingsRow);
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['user-settings'], data);
@@ -137,7 +169,7 @@ export const useUserSettings = () => {
         .single();
 
       if (error) throw error;
-      return data as UserSettings;
+      return mapRowToSettings(data as UserSettingsRow);
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['user-settings'], data);
