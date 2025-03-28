@@ -13,10 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, CalendarDays, List } from "lucide-react";
 import DailyEvents from '@/components/calendar/DailyEvents';
 import { getMonthEvents } from '@/utils/getMonthEvents';
+import { EventWithAttendance } from '@/types/events';
 
 const UserCalendar = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithAttendance | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [view, setView] = useState('month');
   
@@ -41,7 +42,7 @@ const UserCalendar = () => {
   }, [selectedDate, refetch]);
 
   // Handle event click in calendar
-  const handleEventClick = (event: any) => {
+  const handleEventClick = (event: EventWithAttendance) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
@@ -51,6 +52,19 @@ const UserCalendar = () => {
     setIsModalOpen(false);
     setSelectedEvent(null);
   };
+
+  // Convert events to EventWithAttendance[] type
+  const eventsWithAttendance = events.map(event => ({
+    ...event,
+    host_type: event.host_type as "club" | "community" | null,
+    attendance: {
+      id: '',
+      event_id: event.id,
+      attendee_id: '',
+      status: 'registered' as const,
+      registered_at: ''
+    }
+  }));
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -85,20 +99,20 @@ const UserCalendar = () => {
               isLoading={isLoading}
               date={selectedDate}
               setDate={setSelectedDate}
+              view={view}
+              setView={setView}
               onEventClick={handleEventClick}
             />
           </TabsContent>
           
           <TabsContent value="list">
             <DailyEvents 
-              events={events.filter((event: any) => 
+              events={eventsWithAttendance.filter((event: EventWithAttendance) => 
                 format(new Date(event.date), 'yyyy-MM-dd') === 
                 format(selectedDate, 'yyyy-MM-dd')
               )}
               date={selectedDate}
-              setDate={setSelectedDate}
               onEventClick={handleEventClick}
-              isLoading={isLoading}
             />
           </TabsContent>
         </Tabs>
@@ -108,7 +122,7 @@ const UserCalendar = () => {
       
       {selectedEvent && (
         <EventDetailsModal 
-          eventId={selectedEvent.id}
+          selectedEvent={selectedEvent}
           isOpen={isModalOpen} 
           onClose={handleCloseModal} 
         />

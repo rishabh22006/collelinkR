@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Event } from '@/types/events';
 
 interface CalendarViewProps {
   date: Date | undefined;
@@ -13,6 +14,7 @@ interface CalendarViewProps {
   isLoading: boolean;
   view: string;
   setView: (view: string) => void;
+  onEventClick?: (event: any) => void;
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({ 
@@ -21,7 +23,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   events, 
   isLoading, 
   view, 
-  setView 
+  setView,
+  onEventClick 
 }) => {
   // Helper to get dates with events for highlighting in the calendar
   const getDayClassNames = (day: Date) => {

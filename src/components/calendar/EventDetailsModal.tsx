@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Bell, CalendarIcon, Clock, MapPin } from 'lucide-react';
@@ -7,32 +7,67 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Event } from '@/hooks/useEvents';
+import { Event, EventWithAttendance } from '@/types/events';
 import { getCategoryColor } from '@/utils/calendarUtils';
-
-interface EventWithAttendance extends Event {
-  attendance?: {
-    id: string;
-    event_id: string;
-    attendee_id: string;
-    registered_at: string;
-    status: "registered" | "attended" | "canceled";
-  };
-}
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EventDetailsModalProps {
-  selectedEvent: EventWithAttendance;
-  setSelectedEvent: (event: EventWithAttendance | null) => void;
-  reminders: Record<string, boolean>;
-  toggleReminder: (eventId: string) => void;
+  selectedEvent?: EventWithAttendance;
+  setSelectedEvent?: (event: EventWithAttendance | null) => void;
+  eventId?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  reminders?: Record<string, boolean>;
+  toggleReminder?: (eventId: string) => void;
 }
 
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
-  selectedEvent,
+  selectedEvent: propSelectedEvent,
   setSelectedEvent,
-  reminders,
-  toggleReminder
+  eventId,
+  isOpen,
+  onClose,
+  reminders = {},
+  toggleReminder = () => {}
 }) => {
+  const [localSelectedEvent, setLocalSelectedEvent] = useState<EventWithAttendance | null>(
+    propSelectedEvent || null
+  );
+
+  // If an eventId is provided, fetch the event details
+  const { data: fetchedEvent } = useQuery({
+    queryKey: ['event', eventId],
+    queryFn: async () => {
+      if (!eventId) return null;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching event details:', error);
+        return null;
+      }
+      
+      return data as EventWithAttendance;
+    },
+    enabled: !!eventId && !propSelectedEvent,
+  });
+
+  // Use the fetched event if it's available
+  useEffect(() => {
+    if (fetchedEvent && !propSelectedEvent) {
+      setLocalSelectedEvent(fetchedEvent);
+    } else if (propSelectedEvent) {
+      setLocalSelectedEvent(propSelectedEvent);
+    }
+  }, [fetchedEvent, propSelectedEvent]);
+
+  if (!isOpen || !localSelectedEvent) return null;
+
   // Format the event time for display
   const formatEventTime = (dateStr: string) => {
     return format(new Date(dateStr), 'h:mm a');

@@ -1,20 +1,9 @@
-
 import React from 'react';
 import { format, isSameDay } from 'date-fns';
 import { Clock, MapPin, CalendarIcon } from 'lucide-react';
-import { Event } from '@/hooks/useEvents';
+import { EventWithAttendance } from '@/types/events';
 import { getCategoryColor } from '@/utils/calendarUtils';
 import { Badge } from '@/components/ui/badge';
-
-interface EventWithAttendance extends Event {
-  attendance?: {
-    id: string;
-    event_id: string;
-    attendee_id: string;
-    registered_at: string;
-    status: "registered" | "attended" | "canceled";
-  };
-}
 
 interface DailyEventsProps {
   date: Date;
