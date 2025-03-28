@@ -32,8 +32,7 @@ const FeaturedEventsList = ({
         {events.map(event => (
           <EventCard 
             key={event.id} 
-            event={event} 
-            variant="featured"
+            event={event}
             attendeeCount={attendeeCounts[event.id] || 0}
             onRegister={onRegister}
           />

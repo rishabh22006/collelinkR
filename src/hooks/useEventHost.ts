@@ -28,11 +28,7 @@ export const useEventHost = () => {
     if (hostType === 'club') {
       // For clubs, check if user is an admin
       const { data, error } = await supabase
-        .from('club_admins')
-        .select('*')
-        .eq('club_id', hostId)
-        .eq('user_id', profile.id)
-        .maybeSingle();
+        .rpc('is_club_admin', { club_uuid: hostId, user_uuid: profile.id });
 
       if (error) {
         console.error('Error checking club admin status:', error);
@@ -83,7 +79,7 @@ export const useEventHost = () => {
           location: eventData.location,
           category: eventData.category,
           image_url: eventData.image_url,
-          host_id: eventData.host_id,
+          host_id: profile.id,
           community_id: eventData.host_type === 'community' ? eventData.host_id : null,
           host_type: eventData.host_type,
         })
@@ -136,7 +132,7 @@ export const useEventHost = () => {
             user_id: member.user_id,
             title: 'New Club Event',
             content: `A new event "${eventTitle}" has been created by a club you're part of`,
-            type: 'event',
+            type: 'club',
             sender_id: profile.id,
             related_id: eventId,
             read: false
@@ -169,7 +165,7 @@ export const useEventHost = () => {
             user_id: member.member_id,
             title: 'New Community Event',
             content: `A new event "${eventTitle}" has been created in a community you're part of`,
-            type: 'event',
+            type: 'community',
             sender_id: profile.id,
             related_id: eventId,
             read: false

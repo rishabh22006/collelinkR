@@ -1,320 +1,179 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, User, Calendar, Heart, MessageSquare, Clock, Award, ThumbsUp, Users, School, Globe } from 'lucide-react';
-import BottomNavbar from '@/components/layout/BottomNavbar';
+import { Bell, CheckCircle, Check } from 'lucide-react';
+import { format } from 'date-fns';
 import TopNavbar from '@/components/layout/TopNavbar';
+import BottomNavbar from '@/components/layout/BottomNavbar';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { useAuthStore } from '@/stores/authStore';
-import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useNotifications, NotificationCategory } from '@/hooks/useNotifications';
+import NotificationCategoryFilter from '@/components/notifications/NotificationCategoryFilter';
 
 const Notifications = () => {
-  const { profile } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('all');
-  const navigate = useNavigate();
-  
-  const {
-    notifications,
-    unreadCount,
-    categoryCounts,
-    isLoading,
-    markAsRead,
+  const [selectedCategory, setSelectedCategory] = useState<NotificationCategory>('all');
+  const { 
+    notifications, 
+    isLoading, 
+    markAsRead, 
     markAllAsRead,
-    getNotificationsByCategory
+    getNotificationsByCategory 
   } = useNotifications();
-  
-  const filteredNotifications = () => {
-    if (activeTab === 'all') return notifications;
-    if (activeTab === 'unread') return notifications.filter(n => !n.read);
-    return getNotificationsByCategory(activeTab);
+
+  const filteredNotifications = getNotificationsByCategory(selectedCategory);
+
+  // Calculate unread counts by category
+  const unreadCounts = {
+    all: notifications.filter(n => !n.read).length,
+    unread: notifications.filter(n => !n.read).length,
+    messages: notifications.filter(n => !n.read && n.type === 'message').length,
+    events: notifications.filter(n => !n.read && n.type === 'event').length,
+    clubs: notifications.filter(n => !n.read && n.type === 'club').length,
+    communities: notifications.filter(n => !n.read && n.type === 'community').length,
+    other: notifications.filter(n => !n.read && !['message', 'event', 'club', 'community'].includes(n.type)).length,
   };
-  
-  const handleMarkAsRead = (id: string) => {
-    markAsRead.mutate(id);
+
+  const handleMarkAsRead = (notificationId: string) => {
+    markAsRead.mutate(notificationId);
   };
-  
+
   const handleMarkAllAsRead = () => {
-    markAllAsRead.mutate(activeTab !== 'all' && activeTab !== 'unread' ? activeTab : undefined);
+    markAllAsRead.mutate();
   };
-  
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'message':
-        return <MessageSquare className="h-5 w-5" />;
+        return <Bell className="h-5 w-5 text-blue-500" />;
       case 'event':
-        return <Calendar className="h-5 w-5" />;
-      case 'like':
-        return <Heart className="h-5 w-5" />;
-      case 'achievement':
-        return <Award className="h-5 w-5" />;
-      case 'friend':
-        return <Users className="h-5 w-5" />;
+        return <Bell className="h-5 w-5 text-green-500" />;
       case 'club':
-        return <School className="h-5 w-5" />;
+        return <Bell className="h-5 w-5 text-purple-500" />;
       case 'community':
-        return <Globe className="h-5 w-5" />;
+        return <Bell className="h-5 w-5 text-orange-500" />;
       default:
-        return <Bell className="h-5 w-5" />;
-    }
-  };
-  
-  const getTimeString = (date: string) => {
-    const dateObj = new Date(date);
-    const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffInDays < 1) {
-      return formatDistanceToNow(dateObj, { addSuffix: true });
-    } else if (diffInDays < 7) {
-      return format(dateObj, 'EEEE');
-    } else {
-      return format(dateObj, 'MMM d');
+        return <Bell className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  const handleNotificationClick = (notification: typeof notifications[0]) => {
-    // Mark as read
-    handleMarkAsRead(notification.id);
-    
-    // Navigate based on notification type
-    if (notification.type === 'message' && notification.related_id) {
-      navigate('/messages', { state: { chatId: notification.related_id } });
-    } else if (notification.type === 'event' && notification.related_id) {
-      navigate('/events');
-    } else if (notification.type === 'club' && notification.related_id) {
-      navigate('/clubs');
-    } else if (notification.type === 'community' && notification.related_id) {
-      navigate('/clubs'); // Communities are now in clubs page
-    } else if (notification.type === 'friend' && notification.sender_id) {
-      navigate('/profile', { state: { userId: notification.sender_id } });
+  const getCategoryTitle = (category: NotificationCategory) => {
+    switch (category) {
+      case 'all': return 'All Notifications';
+      case 'unread': return 'Unread Notifications';
+      case 'messages': return 'Messages';
+      case 'events': return 'Events';
+      case 'clubs': return 'Clubs';
+      case 'communities': return 'Communities';
+      case 'other': return 'Other Notifications';
     }
   };
-  
+
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen bg-background">
       <TopNavbar />
       
-      <main className="container py-6">
-        <motion.div 
-          className="flex flex-col"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold">Notifications</h1>
-            {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
-                Mark all as read
-              </Button>
-            )}
-          </div>
-          
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-start mb-4 overflow-auto pb-2">
-              <TabsList className="flex-shrink-0">
-                <TabsTrigger value="all" className="relative">
-                  All
-                  <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                    {notifications.length}
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger value="unread" className="relative">
-                  Unread
-                  {unreadCount > 0 && (
-                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                      {unreadCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              
-              <div className="flex items-center gap-2 ml-2 overflow-auto hide-scrollbar">
-                <CategoryTab 
-                  icon={<MessageSquare className="h-4 w-4" />} 
-                  label="Chat" 
-                  value="message" 
-                  count={categoryCounts['message'] || 0}
-                  activeTab={activeTab}
-                  onChange={setActiveTab}
-                />
-                <CategoryTab 
-                  icon={<Calendar className="h-4 w-4" />} 
-                  label="Events" 
-                  value="event" 
-                  count={categoryCounts['event'] || 0}
-                  activeTab={activeTab}
-                  onChange={setActiveTab}
-                />
-                <CategoryTab 
-                  icon={<School className="h-4 w-4" />} 
-                  label="Clubs" 
-                  value="club" 
-                  count={categoryCounts['club'] || 0}
-                  activeTab={activeTab}
-                  onChange={setActiveTab}
-                />
-                <CategoryTab 
-                  icon={<Globe className="h-4 w-4" />} 
-                  label="Communities" 
-                  value="community" 
-                  count={categoryCounts['community'] || 0}
-                  activeTab={activeTab}
-                  onChange={setActiveTab}
-                />
-              </div>
-            </div>
-            
-            <TabsContent value={activeTab} className="space-y-4">
-              {renderNotifications()}
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      </main>
-
-      <BottomNavbar />
-    </div>
-  );
-  
-  function renderNotifications() {
-    const notificationsToShow = filteredNotifications();
-    
-    if (isLoading) {
-      return (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      );
-    }
-    
-    if (notificationsToShow.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Bell size={28} className="text-muted-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold mb-2">No Notifications Yet</h2>
-          <p className="text-muted-foreground max-w-md">
-            When you receive notifications about events, messages, or updates, they'll appear here.
-          </p>
-        </div>
-      );
-    }
-    
-    return notificationsToShow.map((notification) => (
-      <Card 
-        key={notification.id}
-        className={cn(
-          "flex items-start p-4 cursor-pointer hover:bg-muted/50 transition-colors",
-          !notification.read && "border-l-4 border-l-primary"
-        )}
-        onClick={() => handleNotificationClick(notification)}
+      <motion.main 
+        className="container py-6 mb-20"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
       >
-        <div className={cn(
-          "flex items-center justify-center w-10 h-10 rounded-full mr-3",
-          !notification.read ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-        )}>
-          {notification.sender_id ? (
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={""} /> {/* Will be populated from sender profile */}
-              <AvatarFallback className={cn(
-                !notification.read ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-              )}>
-                {notification.title.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            getNotificationIcon(notification.type)
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold">Notifications</h1>
+          
+          {unreadCounts.all > 0 && (
+            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
+              <Check className="h-4 w-4 mr-2" />
+              Mark all as read
+            </Button>
           )}
         </div>
         
-        <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className={cn(
-                "font-medium",
-                !notification.read && "font-semibold"
-              )}>
-                {notification.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">{notification.content}</p>
-            </div>
-            <div className="flex flex-col items-end ml-4">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {getTimeString(notification.created_at)}
-              </span>
-              {!notification.read && (
-                <Badge variant="default" className="mt-1 h-2 w-2 p-0 rounded-full bg-primary" />
-              )}
-            </div>
-          </div>
-          
-          {notification.type === 'message' && (
-            <div className="mt-2 flex justify-end">
-              <Button size="sm" variant="outline" className="mr-2">
-                <MessageSquare className="h-4 w-4 mr-1" /> Reply
-              </Button>
-            </div>
-          )}
-          
-          {notification.type === 'event' && (
-            <div className="mt-2 flex justify-end">
-              <Button size="sm" variant="outline">
-                <Calendar className="h-4 w-4 mr-1" /> View Event
-              </Button>
-            </div>
-          )}
-          
-          {notification.type === 'friend' && (
-            <div className="mt-2 flex justify-end space-x-2">
-              <Button size="sm" variant="outline">
-                <ThumbsUp className="h-4 w-4 mr-1" /> Accept
-              </Button>
-              <Button size="sm" variant="ghost">
-                Decline
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
-    ));
-  }
-};
+        <NotificationCategoryFilter
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          unreadCounts={unreadCounts}
+        />
 
-// Category tab component
-const CategoryTab = ({ icon, label, value, count, activeTab, onChange }: { 
-  icon: React.ReactNode; 
-  label: string; 
-  value: string; 
-  count: number;
-  activeTab: string;
-  onChange: (value: string) => void;
-}) => {
-  return (
-    <Button 
-      variant={activeTab === value ? "default" : "outline"} 
-      size="sm"
-      className="px-3 gap-1 h-8"
-      onClick={() => onChange(value)}
-    >
-      {icon}
-      <span>{label}</span>
-      {count > 0 && (
-        <Badge 
-          variant={activeTab === value ? "outline" : "default"}
-          className="h-5 w-5 p-0 flex items-center justify-center ml-1"
-        >
-          {count}
-        </Badge>
-      )}
-    </Button>
+        <h2 className="text-xl font-semibold mb-4">{getCategoryTitle(selectedCategory)}</h2>
+        
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredNotifications.length === 0 ? (
+          <div className="text-center py-10">
+            <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium">No notifications</h3>
+            <p className="text-muted-foreground">
+              You're all caught up! Check back later for new notifications.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredNotifications.map((notification) => (
+              <Card 
+                key={notification.id} 
+                className={`transition-colors ${!notification.read ? 'bg-muted/30' : ''}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex gap-3">
+                    <div className="shrink-0">
+                      <Avatar>
+                        <AvatarFallback>
+                          {getNotificationIcon(notification.type)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-medium">{notification.title}</h3>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(notification.created_at), 'MMM d, h:mm a')}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {notification.content}
+                      </p>
+                      
+                      {!notification.read && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="mt-2"
+                          onClick={() => handleMarkAsRead(notification.id)}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Mark as read
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </motion.main>
+      
+      <BottomNavbar />
+    </div>
   );
 };
 

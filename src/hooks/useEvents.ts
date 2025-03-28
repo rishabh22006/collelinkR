@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 export interface Event {
   id: string;
@@ -13,12 +15,12 @@ export interface Event {
   location: string | null;
   category: string;
   image_url: string | null;
-  is_featured: boolean;
-  host_id: string;
+  is_featured: boolean | null;
+  host_id: string | null;
   community_id: string | null;
-  host_type: 'club' | 'community' | null;
   created_at: string;
   updated_at: string | null;
+  host_type: 'club' | 'community' | null;
 }
 
 export interface EventAttendee {
@@ -29,11 +31,15 @@ export interface EventAttendee {
   registered_at: string;
 }
 
+export interface EventWithAttendance extends Event {
+  attendance: EventAttendee;
+}
+
 export const useEvents = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
 
-  // Fetch all events - now including host_type
+  // Get all events
   const {
     data: events = [],
     isLoading,
@@ -44,11 +50,7 @@ export const useEvents = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select(`
-          *,
-          host_club:clubs(name, logo_url),
-          host_community:communities(name, logo_url)
-        `)
+        .select('*')
         .order('date', { ascending: true });
 
       if (error) {
@@ -56,11 +58,11 @@ export const useEvents = () => {
         throw error;
       }
 
-      return data as unknown as Event[];
+      return data as Event[];
     },
   });
 
-  // Fetch featured events
+  // Get featured events
   const {
     data: featuredEvents = [],
     isLoading: isFeaturedLoading,
@@ -69,11 +71,7 @@ export const useEvents = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select(`
-          *,
-          host_club:clubs(name, logo_url),
-          host_community:communities(name, logo_url)
-        `)
+        .select('*')
         .eq('is_featured', true)
         .order('date', { ascending: true });
 
@@ -82,51 +80,54 @@ export const useEvents = () => {
         throw error;
       }
 
-      return data as unknown as Event[];
+      return data as Event[];
     },
   });
 
-  // Fetch club events
-  const getClubEvents = async (clubId: string) => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('host_type', 'club')
-      .eq('host_id', clubId)
-      .order('date', { ascending: true });
+  // Get user registered events
+  const {
+    data: userEvents = [],
+    isLoading: isUserEventsLoading,
+  } = useQuery({
+    queryKey: ['events', 'user', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return [];
 
-    if (error) {
-      console.error('Error fetching club events:', error);
-      throw error;
-    }
+      const { data, error } = await supabase
+        .from('event_attendees')
+        .select(`
+          *,
+          event:event_id(*)
+        `)
+        .eq('attendee_id', profile.id);
 
-    return data as unknown as Event[];
-  };
+      if (error) {
+        console.error('Error fetching user events:', error);
+        throw error;
+      }
 
-  // Fetch community events
-  const getCommunityEvents = async (communityId: string) => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('host_type', 'community')
-      .eq('host_id', communityId)
-      .order('date', { ascending: true });
+      // Transform data to include event details with attendance info
+      return data.map((attendee) => ({
+        ...attendee.event,
+        attendance: {
+          id: attendee.id,
+          event_id: attendee.event_id,
+          attendee_id: attendee.attendee_id,
+          status: attendee.status,
+          registered_at: attendee.registered_at,
+        },
+      })) as EventWithAttendance[];
+    },
+    enabled: !!profile?.id,
+  });
 
-    if (error) {
-      console.error('Error fetching community events:', error);
-      throw error;
-    }
-
-    return data as unknown as Event[];
-  };
-
-  // Fetch event attendees
+  // Get event attendees
   const getEventAttendees = async (eventId: string) => {
     const { data, error } = await supabase
       .from('event_attendees')
       .select(`
         *,
-        profiles:attendee_id (id, display_name, avatar_url, email)
+        profiles:attendee_id(id, display_name, avatar_url, email)
       `)
       .eq('event_id', eventId);
 
@@ -140,109 +141,133 @@ export const useEvents = () => {
 
   // Register for an event
   const registerForEvent = useMutation({
-    mutationFn: async ({ eventId, status = 'registered' }: { eventId: string; status?: 'registered' | 'attended' | 'canceled' }) => {
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session?.session?.user) {
+    mutationFn: async ({ eventId }: { eventId: string }) => {
+      if (!profile?.id) {
         throw new Error('You must be logged in to register for events');
       }
 
+      // Check if already registered
+      const { data: existing, error: checkError } = await supabase
+        .from('event_attendees')
+        .select('*')
+        .eq('event_id', eventId)
+        .eq('attendee_id', profile.id)
+        .maybeSingle();
+
+      if (checkError) {
+        throw checkError;
+      }
+
+      if (existing) {
+        throw new Error('You are already registered for this event');
+      }
+
+      // Register for the event
       const { data, error } = await supabase
         .from('event_attendees')
         .insert({
-          event_id: eventId as any,
-          attendee_id: session.session.user.id as any,
-          status: status as any,
+          event_id: eventId,
+          attendee_id: profile.id,
+          status: 'registered',
         })
         .select()
         .single();
 
       if (error) {
-        // Check if it's a duplicate registration
-        if (error.code === '23505') {
-          throw new Error('You are already registered for this event');
-        }
-        console.error('Registration error:', error);
         throw error;
       }
 
-      return data as unknown as EventAttendee;
+      return data;
     },
     onSuccess: () => {
-      toast.success('Successfully registered for the event!');
+      toast.success('Successfully registered for the event');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'user', profile?.id] });
     },
     onError: (error: Error) => {
-      toast.error('Registration failed', { 
-        description: error.message 
+      toast.error('Failed to register for the event', {
+        description: error.message,
       });
     },
   });
 
   // Cancel registration for an event
-  const cancelEventRegistration = useMutation({
-    mutationFn: async (eventId: string) => {
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session?.session?.user) {
-        throw new Error('You must be logged in to cancel registrations');
+  const cancelRegistration = useMutation({
+    mutationFn: async ({ eventId }: { eventId: string }) => {
+      if (!profile?.id) {
+        throw new Error('You must be logged in to cancel registration');
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('event_attendees')
-        .update({ status: 'canceled' })
-        .eq('event_id', eventId)
-        .eq('attendee_id', session.session.user.id);
+        .delete()
+        .match({ event_id: eventId, attendee_id: profile.id })
+        .select();
 
       if (error) {
-        console.error('Cancellation error:', error);
         throw error;
       }
+
+      return data;
     },
     onSuccess: () => {
-      toast.success('Successfully canceled event registration');
+      toast.success('Registration canceled successfully');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'user', profile?.id] });
     },
     onError: (error: Error) => {
-      toast.error('Cancellation failed', { 
-        description: error.message 
+      toast.error('Failed to cancel registration', {
+        description: error.message,
       });
     },
   });
 
-  // Export attendee list as CSV
+  // Export attendee list to Excel
   const exportAttendeeList = async (eventId: string, eventTitle: string) => {
-    if (!profile) {
-      toast.error('You must be logged in to export attendee lists');
-      return;
-    }
-
     try {
-      const attendees = await getEventAttendees(eventId);
-      
-      if (!attendees || attendees.length === 0) {
-        toast.info('No attendees to export');
+      if (!profile?.id) {
+        toast.error('You must be logged in to export attendee list');
         return;
       }
 
-      // Create CSV content
-      let csvContent = "Name,Email,Registration Status,Registration Date\n";
-      
-      attendees.forEach(attendee => {
-        const profile = attendee.profiles;
-        csvContent += `"${profile.display_name}","${profile.email}","${attendee.status}","${new Date(attendee.registered_at).toLocaleString()}"\n`;
-      });
+      // Fetch event details to check if user is the host
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
 
-      // Create download link
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_attendees.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (eventError) {
+        throw eventError;
+      }
+
+      if (event.host_id !== profile.id) {
+        toast.error('Only the event host can export the attendee list');
+        return;
+      }
+
+      // Fetch attendees with profile information
+      const attendees = await getEventAttendees(eventId);
+      
+      // Format data for Excel
+      const excelData = attendees.map((item) => ({
+        Name: item.profiles.display_name,
+        Email: item.profiles.email,
+        Status: item.status,
+        'Registered At': new Date(item.registered_at).toLocaleString(),
+      }));
+
+      // Create workbook
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendees');
+
+      // Generate and download Excel file
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const fileName = `${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_attendees.xlsx`;
+      
+      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      saveAs(blob, fileName);
 
       toast.success('Attendee list exported successfully');
     } catch (error) {
@@ -254,42 +279,15 @@ export const useEvents = () => {
   return {
     events,
     featuredEvents,
+    userEvents,
     isLoading,
     isFeaturedLoading,
+    isUserEventsLoading,
     error,
     refetch,
     getEventAttendees,
     registerForEvent,
-    cancelEventRegistration,
-    getClubEvents,
-    getCommunityEvents,
-    exportAttendeeList
+    cancelRegistration,
+    exportAttendeeList,
   };
-};
-
-// Hook to get user's registration status for an event
-export const useEventRegistration = (eventId: string) => {
-  const { profile } = useAuthStore();
-  
-  return useQuery({
-    queryKey: ['eventRegistration', eventId],
-    queryFn: async () => {
-      if (!profile?.id) return null;
-      
-      const { data, error } = await supabase
-        .from('event_attendees')
-        .select('*')
-        .eq('event_id', eventId)
-        .eq('attendee_id', profile.id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
-        console.error('Event registration check error:', error);
-        throw error;
-      }
-
-      return data as unknown as EventAttendee | null;
-    },
-    enabled: !!profile?.id && !!eventId,
-  });
 };

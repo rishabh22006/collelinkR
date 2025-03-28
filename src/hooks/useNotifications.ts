@@ -1,9 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
+import { useEffect } from 'react';
 
 export interface Notification {
   id: string;
@@ -11,19 +10,19 @@ export interface Notification {
   title: string;
   content: string;
   type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
-  sender_id?: string | null;
-  related_id?: string | null;
+  sender_id: string | null;
+  related_id: string | null;
   read: boolean;
   created_at: string;
 }
 
-export const useNotifications = () => {
-  const { profile } = useAuthStore();
-  const queryClient = useQueryClient();
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+export type NotificationCategory = 'all' | 'unread' | 'messages' | 'events' | 'clubs' | 'communities' | 'other';
 
-  // Fetch user's notifications
+export const useNotifications = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuthStore();
+
+  // Get user notifications
   const {
     data: notifications = [],
     isLoading,
@@ -32,7 +31,7 @@ export const useNotifications = () => {
   } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      if (!profile) throw new Error('User not authenticated');
+      if (!profile?.id) return [];
 
       const { data, error } = await supabase
         .from('notifications')
@@ -40,135 +39,94 @@ export const useNotifications = () => {
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Calculate counts
-      const unread = data.filter(n => !n.read).length;
-      setUnreadCount(unread);
-      
-      // Calculate category counts
-      const counts: Record<string, number> = {};
-      const categories = ['message', 'event', 'club', 'community', 'achievement', 'friend', 'system'];
-      
-      categories.forEach(category => {
-        counts[category] = data.filter(n => n.type === category && !n.read).length;
-      });
-      
-      setCategoryCounts(counts);
-      
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+      }
+
       return data as Notification[];
     },
-    enabled: !!profile?.id
+    enabled: !!profile?.id,
   });
 
   // Get notifications by category
-  const getNotificationsByCategory = (category: string) => {
-    return notifications.filter(notification => notification.type === category);
+  const getNotificationsByCategory = (category: NotificationCategory) => {
+    if (category === 'all') return notifications;
+    if (category === 'unread') return notifications.filter(n => !n.read);
+    if (category === 'messages') return notifications.filter(n => n.type === 'message');
+    if (category === 'events') return notifications.filter(n => n.type === 'event');
+    if (category === 'clubs') return notifications.filter(n => n.type === 'club');
+    if (category === 'communities') return notifications.filter(n => n.type === 'community');
+    if (category === 'other') {
+      return notifications.filter(n => 
+        !['message', 'event', 'club', 'community'].includes(n.type)
+      );
+    }
+    return [];
   };
+
+  // Get unread notification count
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Mark notification as read
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
-      if (!profile) throw new Error('User not authenticated');
-
       const { data, error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId)
-        .eq('user_id', profile.id)
-        .select()
-        .single();
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
-    onError: (error: Error) => {
-      toast.error('Failed to mark notification as read', {
-        description: error.message
-      });
-    }
   });
 
   // Mark all notifications as read
   const markAllAsRead = useMutation({
-    mutationFn: async (type?: string) => {
-      if (!profile) throw new Error('User not authenticated');
+    mutationFn: async () => {
+      if (!profile?.id) return null;
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('user_id', profile.id)
-        .eq('read', false);
-        
-      // If type is provided, only mark notifications of that type as read
-      if (type) {
-        query = query.eq('type', type);
-      }
-        
-      const { data, error } = await query.select();
+        .eq('read', false)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      const type = variables as string | undefined;
-      toast.success(type ? `All ${type} notifications marked as read` : 'All notifications marked as read');
     },
-    onError: (error: Error) => {
-      toast.error('Failed to mark all notifications as read', {
-        description: error.message
-      });
-    }
   });
 
-  // Set up real-time subscription for new notifications
+  // Subscribe to real-time notifications
   useEffect(() => {
     if (!profile?.id) return;
 
     const channel = supabase
-      .channel('notifications-changes')
+      .channel('public:notifications')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${profile.id}`
+          filter: `user_id=eq.${profile.id}`,
         },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          
-          // Add notification to cache
-          queryClient.setQueryData<Notification[]>(['notifications'], (oldData = []) => {
-            // Check if notification already exists
-            if (oldData.some(n => n.id === newNotification.id)) {
-              return oldData;
-            }
-            
-            return [newNotification, ...oldData];
-          });
-          
-          // Update unread count
-          setUnreadCount(prev => prev + 1);
-          
-          // Update category counts
-          setCategoryCounts(prev => ({
-            ...prev,
-            [newNotification.type]: (prev[newNotification.type] || 0) + 1
-          }));
-          
-          // Show toast notification
-          toast(newNotification.title, {
-            description: newNotification.content,
-            action: {
-              label: 'View',
-              onClick: () => window.location.href = '/notifications'
-            }
-          });
+        () => {
+          refetch();
         }
       )
       .subscribe();
@@ -176,55 +134,15 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.id, queryClient]);
+  }, [profile?.id, refetch]);
 
   return {
     notifications,
-    unreadCount,
-    categoryCounts,
     isLoading,
     error,
-    refetch,
+    unreadCount,
     markAsRead,
     markAllAsRead,
-    getNotificationsByCategory
+    getNotificationsByCategory,
   };
-};
-
-// Helper function to create a notification
-export const createNotification = async ({
-  userId,
-  title,
-  content,
-  type,
-  senderId = null,
-  relatedId = null
-}: {
-  userId: string;
-  title: string;
-  content: string;
-  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
-  senderId?: string | null;
-  relatedId?: string | null;
-}) => {
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      title,
-      content,
-      type,
-      sender_id: senderId,
-      related_id: relatedId,
-      read: false
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating notification:', error);
-    throw error;
-  }
-
-  return data;
 };
