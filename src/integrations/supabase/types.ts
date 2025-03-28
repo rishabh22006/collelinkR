@@ -135,6 +135,103 @@ export type Database = {
           },
         ]
       }
+      club_admins: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_admins_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_members: {
+        Row: {
+          club_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution: string | null
+          is_featured: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution?: string | null
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution?: string | null
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       colleges: {
         Row: {
           created_at: string
@@ -891,9 +988,81 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_club: {
+        Args: {
+          club_name: string
+          club_description: string
+          club_institution: string
+          club_logo_url: string
+          club_banner_url: string
+          creator_id: string
+        }
+        Returns: {
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution: string | null
+          is_featured: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }
+      }
+      get_all_clubs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution: string | null
+          is_featured: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }[]
+      }
       get_auth_user: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_club_details: {
+        Args: {
+          club_uuid: string
+        }
+        Returns: {
+          id: string
+          name: string
+          description: string
+          institution: string
+          logo_url: string
+          banner_url: string
+          is_featured: boolean
+          is_verified: boolean
+          created_at: string
+          updated_at: string
+          members_count: number
+          is_member: boolean
+          is_admin: boolean
+        }[]
+      }
+      get_featured_clubs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution: string | null
+          is_featured: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }[]
       }
       get_or_create_direct_chat: {
         Args: {
@@ -908,6 +1077,20 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      is_club_admin: {
+        Args: {
+          club_uuid: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
+      is_club_member: {
+        Args: {
+          club_uuid: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
       is_community_admin: {
         Args: {
           community_uuid: string
@@ -918,6 +1101,25 @@ export type Database = {
       is_group_chat_member: {
         Args: {
           group_uuid: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
+      join_club: {
+        Args: {
+          club_uuid: string
+          user_uuid: string
+        }
+        Returns: {
+          club_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+      }
+      leave_club: {
+        Args: {
+          club_uuid: string
           user_uuid: string
         }
         Returns: boolean
