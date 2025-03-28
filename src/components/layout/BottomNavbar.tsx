@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, UsersRound, BellRing, Calendar, Medal } from 'lucide-react';
+import { Home, Search, UsersRound, Calendar, Medal, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -14,8 +14,8 @@ const BottomNavbar = () => {
     { name: 'Search', path: '/search', icon: Search },
     { name: 'Clubs & Communities', path: '/clubs', icon: UsersRound },
     { name: 'Calendar', path: '/calendar', icon: Calendar },
+    { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Leaderboard', path: '/leaderboard', icon: Medal },
-    { name: 'Notifications', path: '/notifications', icon: BellRing },
   ];
 
   const isActive = (path: string) => {

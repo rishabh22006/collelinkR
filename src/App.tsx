@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./components/providers/ThemeProvider";
 import PageTransition from "./components/shared/PageTransition";
 import AuthProvider from "./components/providers/AuthProvider";
+import ChatDrawer from "./components/messaging/ChatDrawer";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Clubs from "./pages/Clubs";
@@ -24,6 +25,7 @@ import CreatePost from "./pages/CreatePost";
 import Certificates from "./pages/Certificates";
 import Leaderboard from "./pages/Leaderboard";
 import Events from "./pages/Events";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <ChatDrawer />
             <Routes>
               <Route path="/" element={
                 <PageTransition>
@@ -117,6 +120,11 @@ const App = () => (
               <Route path="/events" element={
                 <PageTransition>
                   <Events />
+                </PageTransition>
+              } />
+              <Route path="/settings" element={
+                <PageTransition>
+                  <Settings />
                 </PageTransition>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
