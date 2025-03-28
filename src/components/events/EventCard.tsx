@@ -1,133 +1,137 @@
 
 import React from 'react';
+import { format } from 'date-fns';
+import { Calendar, MapPin, Users, School, Globe, FileDown } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { Event } from '@/hooks/useEvents';
 import { useAuthStore } from '@/stores/authStore';
-import { useNavigate } from 'react-router-dom';
-import { Event, useEventRegistration } from '@/hooks/useEvents';
-import EventCardBadge from './EventCardBadge';
-import EventCardImage from './EventCardImage';
-import EventCardMeta from './EventCardMeta';
-import EventCardActions from './EventCardActions';
-import CustomBadge from '../ui/CustomBadge';
+import { useEvents } from '@/hooks/useEvents';
 
 interface EventCardProps {
   event: Event;
-  variant?: 'default' | 'featured';
-  className?: string;
   onRegister: (eventId: string) => void;
+  isRegistered?: boolean;
   attendeeCount?: number;
 }
 
-const EventCard = ({ 
-  event, 
-  variant = 'default',
-  className,
-  onRegister,
-  attendeeCount = 0
-}: EventCardProps) => {
-  const { session } = useAuthStore();
-  const navigate = useNavigate();
-  const { data: registration, isLoading: registrationLoading } = useEventRegistration(event.id);
-  const isRegistered = !!registration;
-  const isFeatured = variant === 'featured' || event.is_featured;
-  const isOfficial = event.host_id === null; // Official events don't have a host_id
+const EventCard = ({ event, onRegister, isRegistered, attendeeCount = 0 }: EventCardProps) => {
+  const { profile } = useAuthStore();
+  const { exportAttendeeList } = useEvents();
   
-  const handleRegister = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!session) {
-      toast.error('Authentication required', {
-        description: 'Please login to register for events',
-        action: {
-          label: 'Login',
-          onClick: () => navigate('/auth'),
-        },
-      });
-      return;
-    }
-    
-    onRegister(event.id);
+  const isHost = profile?.id === event.host_id;
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, 'EEE, MMM d, yyyy h:mm a');
+  };
+  
+  const handleExportAttendees = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    exportAttendeeList(event.id, event.title);
   };
 
-  const isLive = new Date(event.date) <= new Date() && 
-    (!event.end_date || new Date(event.end_date) >= new Date());
-
-  // Different card colors based on category
-  const getCategoryStyles = () => {
-    const categoryColorMap: Record<string, string> = {
-      'Hackathons': isOfficial ? 'bg-blue-50 border-blue-200' : 'bg-blue-50 border-blue-200',
-      'Workshops': isOfficial ? 'bg-purple-50 border-purple-200' : 'bg-purple-50 border-purple-200',
-      'Fests': isOfficial ? 'bg-pink-50 border-pink-200' : 'bg-pink-50 border-pink-200',
-      'Social': isOfficial ? 'bg-green-50 border-green-200' : 'bg-green-50 border-green-200',
-      'Sports': isOfficial ? 'bg-red-50 border-red-200' : 'bg-red-50 border-red-200',
-      'Academic': isOfficial ? 'bg-indigo-50 border-indigo-200' : 'bg-indigo-50 border-indigo-200',
-    };
-    
-    const defaultColor = isOfficial 
-      ? 'bg-gradient-to-br from-blue-50 to-violet-50 border-blue-100'
-      : 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100';
-    
-    return categoryColorMap[event.category] || defaultColor;
+  const getHostIcon = () => {
+    if (event.host_type === 'club') {
+      return <School className="h-4 w-4 mr-1" />;
+    } else if (event.host_type === 'community') {
+      return <Globe className="h-4 w-4 mr-1" />;
+    }
+    return null;
   };
 
   return (
-    <div 
-      className={cn(
-        "group relative rounded-2xl overflow-hidden card-shadow card-hover transition-all duration-300 border",
-        getCategoryStyles(),
-        isFeatured ? "md:flex md:h-64" : "h-auto",
-        className
+    <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+      {event.image_url && (
+        <div
+          className="h-48 bg-center bg-cover"
+          style={{ backgroundImage: `url(${event.image_url})` }}
+        />
       )}
-    >
-      <EventCardImage 
-        imageUrl={event.image_url} 
-        title={event.title}
-        isOfficial={isOfficial}
-        isFeatured={isFeatured}
-      />
       
-      {isLive && <EventCardBadge isLive={true} />}
-      {isOfficial && <EventCardBadge isOfficial={true} />}
-      {isFeatured && !isOfficial && <EventCardBadge isFeatured={true} />}
-      
-      <div className={cn(
-        "p-5 flex flex-col justify-between",
-        isFeatured ? "md:w-1/2" : ""
+      <CardHeader className={cn(
+        "p-4",
+        !event.image_url && `bg-${event.category.toLowerCase()}-50`
       )}>
-        <div>
-          <div className="flex items-start justify-between">
-            <div>
-              <CustomBadge 
-                variant={isOfficial ? "primary" : "default"} 
-                size="sm" 
-                className="mb-2"
-              >
-                {event.category}
-              </CustomBadge>
-              <h3 className={`text-xl font-semibold tracking-tight mb-1 ${isOfficial ? "text-blue-900" : "text-amber-900"}`}>
-                {event.title}
-              </h3>
-            </div>
-          </div>
+        <div className="flex justify-between">
+          <Badge variant={isRegistered ? "secondary" : "outline"}>
+            {event.category}
+          </Badge>
           
-          <EventCardMeta 
-            date={event.date}
-            location={event.location}
-            attendeeCount={attendeeCount}
-            isOfficial={isOfficial}
-          />
+          {event.host_type && (
+            <Badge variant="outline" className="flex items-center">
+              {getHostIcon()}
+              {event.host_type.charAt(0).toUpperCase() + event.host_type.slice(1)}
+            </Badge>
+          )}
+        </div>
+        <h3 className="font-semibold text-lg">{event.title}</h3>
+        
+        <div className="flex items-center text-sm text-muted-foreground gap-1">
+          <Calendar className="h-4 w-4 mr-1" />
+          <span>{formatDate(event.date)}</span>
         </div>
         
-        <EventCardActions 
-          isRegistered={isRegistered}
-          isLoading={registrationLoading}
-          isOfficial={isOfficial}
-          onRegister={handleRegister}
-        />
-      </div>
-    </div>
+        {event.location && (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mr-1" />
+            <span>{event.location}</span>
+          </div>
+        )}
+      </CardHeader>
+      
+      <CardContent className="p-4 pt-0">
+        {event.description && (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {event.description}
+          </p>
+        )}
+      </CardContent>
+      
+      <CardFooter className="p-4 pt-0 flex items-center justify-between">
+        <div className="flex items-center">
+          <Avatar className="h-6 w-6">
+            <AvatarFallback className="text-xs">
+              {event.host_type?.charAt(0).toUpperCase() || 'H'}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="ml-2 flex items-center text-sm text-muted-foreground">
+            <Users className="h-4 w-4 mr-1" />
+            <span>{attendeeCount} attendees</span>
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          {isHost && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExportAttendees}
+              className="gap-1"
+            >
+              <FileDown className="h-4 w-4" />
+              Export
+            </Button>
+          )}
+          
+          <Button 
+            variant={isRegistered ? "secondary" : "default"} 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRegister(event.id);
+            }}
+            disabled={isRegistered}
+          >
+            {isRegistered ? 'Registered' : 'RSVP'}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 };
 

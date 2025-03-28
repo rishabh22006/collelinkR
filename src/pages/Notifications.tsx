@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, User, Calendar, Heart, MessageSquare, Clock, Award, ThumbsUp, Users } from 'lucide-react';
+import { Bell, User, Calendar, Heart, MessageSquare, Clock, Award, ThumbsUp, Users, School, Globe } from 'lucide-react';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
 import { Button } from '@/components/ui/button';
@@ -23,14 +23,17 @@ const Notifications = () => {
   const {
     notifications,
     unreadCount,
+    categoryCounts,
     isLoading,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    getNotificationsByCategory
   } = useNotifications();
   
   const filteredNotifications = () => {
     if (activeTab === 'all') return notifications;
-    return notifications.filter(n => !n.read);
+    if (activeTab === 'unread') return notifications.filter(n => !n.read);
+    return getNotificationsByCategory(activeTab);
   };
   
   const handleMarkAsRead = (id: string) => {
@@ -38,7 +41,7 @@ const Notifications = () => {
   };
   
   const handleMarkAllAsRead = () => {
-    markAllAsRead.mutate();
+    markAllAsRead.mutate(activeTab !== 'all' && activeTab !== 'unread' ? activeTab : undefined);
   };
   
   const getNotificationIcon = (type: string) => {
@@ -53,6 +56,10 @@ const Notifications = () => {
         return <Award className="h-5 w-5" />;
       case 'friend':
         return <Users className="h-5 w-5" />;
+      case 'club':
+        return <School className="h-5 w-5" />;
+      case 'community':
+        return <Globe className="h-5 w-5" />;
       default:
         return <Bell className="h-5 w-5" />;
     }
@@ -81,6 +88,10 @@ const Notifications = () => {
       navigate('/messages', { state: { chatId: notification.related_id } });
     } else if (notification.type === 'event' && notification.related_id) {
       navigate('/events');
+    } else if (notification.type === 'club' && notification.related_id) {
+      navigate('/clubs');
+    } else if (notification.type === 'community' && notification.related_id) {
+      navigate('/clubs'); // Communities are now in clubs page
     } else if (notification.type === 'friend' && notification.sender_id) {
       navigate('/profile', { state: { userId: notification.sender_id } });
     }
@@ -107,8 +118,8 @@ const Notifications = () => {
           </div>
           
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between mb-4">
-              <TabsList>
+            <div className="flex items-center justify-start mb-4 overflow-auto pb-2">
+              <TabsList className="flex-shrink-0">
                 <TabsTrigger value="all" className="relative">
                   All
                   <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
@@ -124,26 +135,45 @@ const Notifications = () => {
                   )}
                 </TabsTrigger>
               </TabsList>
+              
+              <div className="flex items-center gap-2 ml-2 overflow-auto hide-scrollbar">
+                <CategoryTab 
+                  icon={<MessageSquare className="h-4 w-4" />} 
+                  label="Chat" 
+                  value="message" 
+                  count={categoryCounts['message'] || 0}
+                  activeTab={activeTab}
+                  onChange={setActiveTab}
+                />
+                <CategoryTab 
+                  icon={<Calendar className="h-4 w-4" />} 
+                  label="Events" 
+                  value="event" 
+                  count={categoryCounts['event'] || 0}
+                  activeTab={activeTab}
+                  onChange={setActiveTab}
+                />
+                <CategoryTab 
+                  icon={<School className="h-4 w-4" />} 
+                  label="Clubs" 
+                  value="club" 
+                  count={categoryCounts['club'] || 0}
+                  activeTab={activeTab}
+                  onChange={setActiveTab}
+                />
+                <CategoryTab 
+                  icon={<Globe className="h-4 w-4" />} 
+                  label="Communities" 
+                  value="community" 
+                  count={categoryCounts['community'] || 0}
+                  activeTab={activeTab}
+                  onChange={setActiveTab}
+                />
+              </div>
             </div>
             
-            <TabsContent value="all" className="space-y-4">
+            <TabsContent value={activeTab} className="space-y-4">
               {renderNotifications()}
-            </TabsContent>
-            
-            <TabsContent value="unread" className="space-y-4">
-              {unreadCount === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Bell size={28} className="text-muted-foreground" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2">All caught up!</h2>
-                  <p className="text-muted-foreground max-w-md">
-                    You have no unread notifications.
-                  </p>
-                </div>
-              ) : (
-                renderNotifications()
-              )}
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -256,6 +286,36 @@ const Notifications = () => {
       </Card>
     ));
   }
+};
+
+// Category tab component
+const CategoryTab = ({ icon, label, value, count, activeTab, onChange }: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string; 
+  count: number;
+  activeTab: string;
+  onChange: (value: string) => void;
+}) => {
+  return (
+    <Button 
+      variant={activeTab === value ? "default" : "outline"} 
+      size="sm"
+      className="px-3 gap-1 h-8"
+      onClick={() => onChange(value)}
+    >
+      {icon}
+      <span>{label}</span>
+      {count > 0 && (
+        <Badge 
+          variant={activeTab === value ? "outline" : "default"}
+          className="h-5 w-5 p-0 flex items-center justify-center ml-1"
+        >
+          {count}
+        </Badge>
+      )}
+    </Button>
+  );
 };
 
 export default Notifications;

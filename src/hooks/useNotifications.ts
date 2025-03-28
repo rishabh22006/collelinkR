@@ -10,7 +10,7 @@ export interface Notification {
   user_id: string;
   title: string;
   content: string;
-  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system';
+  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
   sender_id?: string | null;
   related_id?: string | null;
   read: boolean;
@@ -21,6 +21,7 @@ export const useNotifications = () => {
   const { profile } = useAuthStore();
   const queryClient = useQueryClient();
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
   // Fetch user's notifications
   const {
@@ -41,14 +42,29 @@ export const useNotifications = () => {
 
       if (error) throw error;
       
-      // Calculate unread count
+      // Calculate counts
       const unread = data.filter(n => !n.read).length;
       setUnreadCount(unread);
+      
+      // Calculate category counts
+      const counts: Record<string, number> = {};
+      const categories = ['message', 'event', 'club', 'community', 'achievement', 'friend', 'system'];
+      
+      categories.forEach(category => {
+        counts[category] = data.filter(n => n.type === category && !n.read).length;
+      });
+      
+      setCategoryCounts(counts);
       
       return data as Notification[];
     },
     enabled: !!profile?.id
   });
+
+  // Get notifications by category
+  const getNotificationsByCategory = (category: string) => {
+    return notifications.filter(notification => notification.type === category);
+  };
 
   // Mark notification as read
   const markAsRead = useMutation({
@@ -78,22 +94,29 @@ export const useNotifications = () => {
 
   // Mark all notifications as read
   const markAllAsRead = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (type?: string) => {
       if (!profile) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('notifications')
         .update({ read: true })
         .eq('user_id', profile.id)
-        .eq('read', false)
-        .select();
+        .eq('read', false);
+        
+      // If type is provided, only mark notifications of that type as read
+      if (type) {
+        query = query.eq('type', type);
+      }
+        
+      const { data, error } = await query.select();
 
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('All notifications marked as read');
+      const type = variables as string | undefined;
+      toast.success(type ? `All ${type} notifications marked as read` : 'All notifications marked as read');
     },
     onError: (error: Error) => {
       toast.error('Failed to mark all notifications as read', {
@@ -132,6 +155,12 @@ export const useNotifications = () => {
           // Update unread count
           setUnreadCount(prev => prev + 1);
           
+          // Update category counts
+          setCategoryCounts(prev => ({
+            ...prev,
+            [newNotification.type]: (prev[newNotification.type] || 0) + 1
+          }));
+          
           // Show toast notification
           toast(newNotification.title, {
             description: newNotification.content,
@@ -152,11 +181,13 @@ export const useNotifications = () => {
   return {
     notifications,
     unreadCount,
+    categoryCounts,
     isLoading,
     error,
     refetch,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    getNotificationsByCategory
   };
 };
 
@@ -172,7 +203,7 @@ export const createNotification = async ({
   userId: string;
   title: string;
   content: string;
-  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system';
+  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
   senderId?: string | null;
   relatedId?: string | null;
 }) => {

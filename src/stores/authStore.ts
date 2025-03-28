@@ -58,12 +58,40 @@ export const useAuthStore = create<AuthState>()(
 
             if (error) {
               console.error('Error fetching profile:', error);
+              
+              // If profile doesn't exist, create it
+              if (error.code === 'PGRST116') {
+                try {
+                  const { data: newProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert({
+                      id: session.user.id,
+                      display_name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
+                      email: session.user.email || '',
+                      avatar_url: session.user.user_metadata.avatar_url || null,
+                      university: session.user.user_metadata.university || null,
+                      college: session.user.user_metadata.college || null,
+                      role: 'user'
+                    })
+                    .select()
+                    .single();
+                  
+                  if (createError) {
+                    throw createError;
+                  }
+                  
+                  set({ profile: newProfile as unknown as Profile });
+                } catch (createErr) {
+                  console.error('Error creating profile:', createErr);
+                }
+              }
             } else {
               console.log("Found profile:", profile);
               set({ profile: profile as unknown as Profile });
             }
           } else {
             console.log("No active session found");
+            set({ profile: null });
           }
         } catch (error) {
           console.error('Auth check error:', error);
