@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, UsersRound, Calendar, Medal, MessageSquare } from 'lucide-react';
+import { Home, Search, UsersRound, Calendar, Award, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -12,10 +12,10 @@ const BottomNavbar = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Search', path: '/search', icon: Search },
-    { name: 'Clubs & Communities', path: '/clubs', icon: UsersRound },
+    { name: 'Clubs', path: '/clubs', icon: UsersRound },
     { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Messages', path: '/messages', icon: MessageSquare },
-    { name: 'Leaderboard', path: '/leaderboard', icon: Medal },
+    { name: 'Certificates', path: '/certificates', icon: Award },
   ];
 
   const isActive = (path: string) => {
