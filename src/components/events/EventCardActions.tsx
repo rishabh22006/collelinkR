@@ -25,8 +25,8 @@ const EventCardActions = ({
         className={cn(
           "transition-all duration-300",
           isRegistered ? "opacity-70" : "",
-          isOfficial && !isRegistered ? "bg-primary hover:bg-accent shadow-[0_0_10px_rgba(255,193,7,0.2)]" : "",
-          !isOfficial && !isRegistered ? "border-primary text-primary hover:bg-primary/10" : ""
+          isOfficial && !isRegistered ? "bg-blue-600 hover:bg-blue-700" : "",
+          !isOfficial && !isRegistered ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""
         )}
         onClick={onRegister}
         disabled={isRegistered || isLoading}
@@ -34,7 +34,7 @@ const EventCardActions = ({
         {isLoading ? "Loading..." : isRegistered ? "Registered" : "Register"}
       </Button>
       
-      <ChevronRight size={18} className="text-muted-foreground/50 transition-all duration-300 group-hover:translate-x-1 group-hover:text-accent" />
+      <ChevronRight size={18} className="text-muted-foreground/50 transition-all duration-300 group-hover:translate-x-1" />
     </div>
   );
 };

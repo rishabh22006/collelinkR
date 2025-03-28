@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface CategoryFilterProps {
   categories: string[];
@@ -20,8 +19,8 @@ const CategoryFilter = ({ categories, selectedCategory, onCategoryChange }: Cate
           className={cn(
             "whitespace-nowrap",
             selectedCategory === category ? 
-              "bg-primary text-primary-foreground hover:bg-accent shadow-[0_0_10px_rgba(255,193,7,0.3)]" : 
-              "border-primary text-foreground hover:bg-primary/20 hover:text-primary"
+              "bg-primary text-primary-foreground hover:bg-secondary" : 
+              "border-primary text-primary-foreground hover:bg-primary"
           )}
           onClick={() => onCategoryChange(category)}
         >
@@ -31,5 +30,8 @@ const CategoryFilter = ({ categories, selectedCategory, onCategoryChange }: Cate
     </div>
   );
 };
+
+// Add missing import
+import { cn } from '@/lib/utils';
 
 export default CategoryFilter;
