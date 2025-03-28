@@ -44,7 +44,7 @@ const Auth = () => {
   const { session, checkAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<OnboardingStep>(OnboardingStep.FEATURES_INTRO);
-  const [universityData, setUniversityData] = useState({ university: 'mit-adt', college: '' });
+  const [universityData, setUniversityData] = useState({ university: '', college: '' });
 
   // Redirect if already logged in
   useEffect(() => {
@@ -98,6 +98,21 @@ const Auth = () => {
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
     setIsLoading(true);
     try {
+      // Get college name from its ID
+      let collegeName = '';
+      
+      if (universityData.college) {
+        const { data: collegeData } = await supabase
+          .from('colleges')
+          .select('name')
+          .eq('id', universityData.college)
+          .single();
+          
+        if (collegeData) {
+          collegeName = collegeData.name;
+        }
+      }
+      
       const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -105,7 +120,7 @@ const Auth = () => {
           data: {
             display_name: values.displayName,
             university: universityData.university,
-            college: universityData.college,
+            college: collegeName || universityData.college,
           },
         },
       });

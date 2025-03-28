@@ -41,7 +41,7 @@ export const useAuth = () => {
     isModerator: profile?.role === 'moderator',
     signOut,
     // Add university related helpers
-    university: profile?.university || 'mit-adt',
+    university: profile?.university || '',
     college: profile?.college || '',
     hasUniversityInfo: !!(profile?.university && profile?.college)
   };

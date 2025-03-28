@@ -135,6 +135,35 @@ export type Database = {
           },
         ]
       }
+      colleges: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          university_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          university_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          university_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colleges_university_code_fkey"
+            columns: ["university_code"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -776,6 +805,27 @@ export type Database = {
           total_points?: number
           university?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      universities: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
