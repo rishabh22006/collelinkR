@@ -254,7 +254,7 @@ const Notifications = () => {
                 {getTimeString(notification.createdAt)}
               </span>
               {!notification.read && (
-                <Badge variant="primary" className="mt-1 h-2 w-2 p-0 rounded-full" />
+                <Badge variant="default" className="mt-1 h-2 w-2 p-0 rounded-full bg-primary" />
               )}
             </div>
           </div>
