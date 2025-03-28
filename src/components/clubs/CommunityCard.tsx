@@ -50,6 +50,7 @@ const CommunityCard = ({ community }: { community: CommunityDataProps }) => {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onJoinToggle={handleJoinToggle}
+        isJoined={isJoined}
       />
     </>
   );

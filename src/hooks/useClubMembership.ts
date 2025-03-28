@@ -1,0 +1,150 @@
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
+import { ClubMember, ClubMembershipStatus } from './useClubTypes';
+
+/**
+ * Hook for managing club membership
+ */
+export const useClubMembership = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuthStore();
+
+  // Check if user is a club member
+  const isClubMember = async (clubId: string): Promise<boolean> => {
+    if (!profile?.id) return false;
+
+    try {
+      // Using raw SQL query since the club_members table is not properly
+      // recognized in the TypeScript definitions
+      const { data, error } = await supabase
+        .from('club_members')
+        .select('*')
+        .eq('club_id', clubId)
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking club membership:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (err) {
+      console.error('Failed to check club membership:', err);
+      return false;
+    }
+  };
+
+  // Get membership status (combining member and admin checks for efficiency)
+  const getMembershipStatus = async (clubId: string): Promise<ClubMembershipStatus> => {
+    if (!profile?.id) return { isMember: false, isAdmin: false };
+    
+    try {
+      // First check membership
+      const membershipResult = await isClubMember(clubId);
+      
+      // Check admin status
+      const { data: isAdmin, error: adminError } = await supabase
+        .rpc('is_club_admin', { 
+          club_uuid: clubId, 
+          user_uuid: profile.id 
+        });
+
+      if (adminError) {
+        console.error('Error checking club admin status:', adminError);
+        return { isMember: membershipResult, isAdmin: false };
+      }
+
+      return { 
+        isMember: membershipResult, 
+        isAdmin: !!isAdmin 
+      };
+    } catch (err) {
+      console.error('Failed to check membership status:', err);
+      return { isMember: false, isAdmin: false };
+    }
+  };
+
+  // Join a club
+  const joinClub = useMutation({
+    mutationFn: async (clubId: string) => {
+      if (!profile?.id) {
+        throw new Error('You must be logged in to join a club');
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('club_members')
+          .insert({
+            club_id: clubId,
+            user_id: profile.id,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        return data as ClubMember;
+      } catch (err) {
+        console.error('Failed to join club:', err);
+        throw err;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Successfully joined the club');
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to join club', {
+        description: error.message,
+      });
+    },
+  });
+
+  // Leave a club
+  const leaveClub = useMutation({
+    mutationFn: async (clubId: string) => {
+      if (!profile?.id) {
+        throw new Error('You must be logged in to leave a club');
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('club_members')
+          .delete()
+          .match({ club_id: clubId, user_id: profile.id })
+          .select();
+
+        if (error) {
+          throw error;
+        }
+
+        return data;
+      } catch (err) {
+        console.error('Failed to leave club:', err);
+        throw err;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Successfully left the club');
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to leave club', {
+        description: error.message,
+      });
+    },
+  });
+
+  return {
+    isClubMember,
+    getMembershipStatus,
+    joinClub,
+    leaveClub,
+  };
+};

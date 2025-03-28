@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { Event } from '@/types/supabase';
 import { createNotification } from '@/hooks/useNotifications';
+import { useClubAdmin } from './useClubAdmin';
 
 interface HostEventParams {
   title: string;
@@ -21,6 +22,7 @@ interface HostEventParams {
 export const useEventHost = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
+  const { isClubAdmin } = useClubAdmin();
 
   // Check if user can host event for a given host type and id
   const canHostEvent = async (hostType: 'club' | 'community', hostId: string) => {
@@ -28,19 +30,8 @@ export const useEventHost = () => {
 
     try {
       if (hostType === 'club') {
-        // For clubs, check if user is an admin
-        const { data, error } = await supabase
-          .rpc('is_club_admin', { 
-            club_uuid: hostId, 
-            user_uuid: profile.id 
-          });
-
-        if (error) {
-          console.error('Error checking club admin status:', error);
-          return false;
-        }
-
-        return !!data;
+        // For clubs, check if user is an admin using the refactored function
+        return await isClubAdmin(hostId);
       } else if (hostType === 'community') {
         // For communities, check if user is a member
         const { data, error } = await supabase

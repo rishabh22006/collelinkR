@@ -65,6 +65,7 @@ const FeaturedClubCard = ({ club }: { club: ClubDataProps }) => {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onJoinToggle={handleJoinToggle}
+        isJoined={isJoined}
       />
     </>
   );

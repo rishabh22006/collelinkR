@@ -1,103 +1,113 @@
 
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, RefreshCcw } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import TopNavbar from '@/components/layout/TopNavbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import CalendarView from '@/components/calendar/CalendarView';
 import EventDetailsModal from '@/components/calendar/EventDetailsModal';
-import { useEvents, EventWithAttendance } from '@/hooks/useEvents';
-import { cn } from '@/lib/utils';
-import { getMonthEvents } from '@/utils/calendarUtils';
+import { useEvents } from '@/hooks/useEvents';
+import CategoryLegend from '@/components/calendar/CategoryLegend';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, CalendarDays, List } from "lucide-react";
+import DailyEvents from '@/components/calendar/DailyEvents';
 
 const UserCalendar = () => {
-  const [date, setDate] = useState<Date>(new Date());
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [view, setView] = useState('month');
   
-  const { userEvents, isUserEventsLoading, refetch } = useEvents();
+  const { getEvents, getMonthEvents } = useEvents();
   
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await refetch();
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
-  
+  // Fetch events for the selected month
+  const {
+    data: events = [],
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['calendar', 'month', format(selectedDate, 'yyyy-MM')],
+    queryFn: async () => {
+      const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
+      return getMonthEvents(startDate, endDate);
+    },
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [selectedDate, refetch]);
+
+  // Handle event click in calendar
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
-    setShowModal(true);
+    setIsModalOpen(true);
   };
-  
-  const closeModal = () => {
-    setShowModal(false);
+
+  // Close event details modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
     setSelectedEvent(null);
   };
-  
-  // Make sure to safely handle userEvents
-  const events = userEvents || [];
-  const monthEvents = getMonthEvents(events, date);
-  
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <TopNavbar />
       
-      <motion.main 
-        className="container py-6 mb-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Calendar</h1>
-          
-          <div className="flex gap-2">
-            <Button 
-              size="icon" 
-              variant="outline" 
-              onClick={handleRefresh}
-              className={cn(isRefreshing && "animate-spin")}
-            >
-              <RefreshCcw className="h-4 w-4" />
-            </Button>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[240px] justify-start">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(date, 'MMMM yyyy')}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(date) => date && setDate(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
+      <div className="container py-6">
+        <h1 className="text-2xl font-semibold mb-4">My Calendar</h1>
         
-        <div className="rounded-lg border border-border overflow-hidden">
-          <CalendarView 
-            events={monthEvents} 
-            onEventClick={handleEventClick}
-            isLoading={isUserEventsLoading}
-          />
-        </div>
-      </motion.main>
+        <Tabs value={view} onValueChange={setView} className="mb-6">
+          <TabsList className="grid grid-cols-2 w-full mb-4">
+            <TabsTrigger value="month" className="flex items-center gap-2">
+              <Calendar size={16} />
+              <span>Month View</span>
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List size={16} />
+              <span>List View</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Badge className="bg-blue-500">Academic</Badge>
+            <Badge className="bg-green-500">Social</Badge>
+            <Badge className="bg-purple-500">Club</Badge>
+            <Badge className="bg-amber-500">Competition</Badge>
+            <Badge className="bg-red-500">Deadline</Badge>
+          </div>
+          
+          <TabsContent value="month">
+            <CalendarView 
+              events={events} 
+              isLoading={isLoading}
+              onSelectEvent={handleEventClick}
+            />
+          </TabsContent>
+          
+          <TabsContent value="list">
+            <DailyEvents 
+              events={events.filter((event: any) => 
+                format(new Date(event.date), 'yyyy-MM-dd') === 
+                format(selectedDate, 'yyyy-MM-dd')
+              )}
+              date={selectedDate}
+              onSelectDate={setSelectedDate}
+              onSelectEvent={handleEventClick}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+        </Tabs>
+        
+        <CategoryLegend />
+      </div>
       
       {selectedEvent && (
         <EventDetailsModal 
-          eventId={selectedEvent.id}
-          open={showModal}
-          onClose={closeModal}
+          event={selectedEvent}
+          isOpen={isModalOpen} 
+          onClose={handleCloseModal} 
         />
       )}
       
