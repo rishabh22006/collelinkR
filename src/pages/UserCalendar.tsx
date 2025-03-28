@@ -16,7 +16,7 @@ import { getMonthEvents } from '@/utils/calendarUtils';
 
 const UserCalendar = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedEvent, setSelectedEvent] = useState<EventWithAttendance | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -28,7 +28,7 @@ const UserCalendar = () => {
     setTimeout(() => setIsRefreshing(false), 500);
   };
   
-  const handleEventClick = (event: EventWithAttendance) => {
+  const handleEventClick = (event: any) => {
     setSelectedEvent(event);
     setShowModal(true);
   };
@@ -38,7 +38,9 @@ const UserCalendar = () => {
     setSelectedEvent(null);
   };
   
-  const monthEvents = getMonthEvents(userEvents as unknown as EventWithAttendance[], date);
+  // Make sure to safely handle userEvents
+  const events = userEvents || [];
+  const monthEvents = getMonthEvents(events, date);
   
   return (
     <div className="min-h-screen bg-background">
@@ -85,7 +87,6 @@ const UserCalendar = () => {
         <div className="rounded-lg border border-border overflow-hidden">
           <CalendarView 
             events={monthEvents} 
-            currentDate={date} 
             onEventClick={handleEventClick}
             isLoading={isUserEventsLoading}
           />
@@ -94,7 +95,7 @@ const UserCalendar = () => {
       
       {selectedEvent && (
         <EventDetailsModal 
-          event={selectedEvent}
+          eventId={selectedEvent.id}
           open={showModal}
           onClose={closeModal}
         />

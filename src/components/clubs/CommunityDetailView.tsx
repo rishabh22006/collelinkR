@@ -11,11 +11,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import HostEventForm from '@/components/events/HostEventForm';
 
-interface CommunityDetailViewProps {
+export interface CommunityDetailViewProps {
   communityId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onJoinToggle: (e?: React.MouseEvent) => void;
 }
 
-const CommunityDetailView = ({ communityId }: CommunityDetailViewProps) => {
+const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle }: CommunityDetailViewProps) => {
   const navigate = useNavigate();
   const [showEventForm, setShowEventForm] = useState(false);
   
@@ -35,18 +38,19 @@ const CommunityDetailView = ({ communityId }: CommunityDetailViewProps) => {
     members: [
       { id: '1', name: 'Alice Johnson', avatar: null, role: 'admin' },
       { id: '2', name: 'Bob Miller', avatar: null, role: 'member' },
-    ]
+    ],
+    isJoined: true
   };
   
-  const isMember = true; // Replace with actual check
+  const isMember = community.isJoined;
   const isAdmin = true; // Replace with actual check
   
   const joinCommunity = () => {
-    console.log('Joining community...');
+    onJoinToggle();
   };
   
   const leaveCommunity = () => {
-    console.log('Leaving community...');
+    onJoinToggle();
   };
   
   const openEventForm = () => {
@@ -56,6 +60,8 @@ const CommunityDetailView = ({ communityId }: CommunityDetailViewProps) => {
   const closeEventForm = () => {
     setShowEventForm(false);
   };
+  
+  if (!isOpen) return null;
   
   return (
     <div>
@@ -71,7 +77,7 @@ const CommunityDetailView = ({ communityId }: CommunityDetailViewProps) => {
             variant="outline" 
             size="icon" 
             className="bg-background/80 backdrop-blur"
-            onClick={() => navigate(-1)}
+            onClick={onClose}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -175,7 +181,7 @@ const CommunityDetailView = ({ communityId }: CommunityDetailViewProps) => {
                   </div>
                   
                   {member.role === 'admin' && (
-                    <Badge variant="outline" size="sm">Admin</Badge>
+                    <Badge variant="outline">Admin</Badge>
                   )}
                 </CardContent>
               </Card>

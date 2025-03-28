@@ -1,5 +1,5 @@
 
-import { format, isSameDay, isToday } from 'date-fns';
+import { format, isSameDay, isToday, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 
 // Function to convert events to calendar-friendly format
 export const mapEventsToCalendarFormat = (events: any[]) => {
@@ -16,6 +16,17 @@ export const getEventsForDate = (events: any[], date: Date | undefined) => {
   return events.filter(event => 
     isSameDay(new Date(event.date), date)
   );
+};
+
+// Get events for the current month
+export const getMonthEvents = (events: any[], date: Date) => {
+  const monthStart = startOfMonth(date);
+  const monthEnd = endOfMonth(date);
+  
+  return events.filter(event => {
+    const eventDate = new Date(event.date);
+    return eventDate >= monthStart && eventDate <= monthEnd;
+  });
 };
 
 // Format the event time for display

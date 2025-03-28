@@ -13,11 +13,14 @@ import { useClubs } from '@/hooks/useClubs';
 import { useAuthStore } from '@/stores/authStore';
 import HostEventForm from '@/components/events/HostEventForm';
 
-interface ClubDetailViewProps {
+export interface ClubDetailViewProps {
   clubId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onJoinToggle: (e?: React.MouseEvent) => void;
 }
 
-const ClubDetailView = ({ clubId }: ClubDetailViewProps) => {
+const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle }: ClubDetailViewProps) => {
   const navigate = useNavigate();
   const { profile } = useAuthStore();
   const [showEventForm, setShowEventForm] = useState(false);
@@ -38,18 +41,19 @@ const ClubDetailView = ({ clubId }: ClubDetailViewProps) => {
     admins: [
       { id: '1', name: 'John Smith', avatar: null },
       { id: '2', name: 'Emma Davis', avatar: null },
-    ]
+    ],
+    isJoined: true
   };
   
   const isAdmin = true; // Replace with actual check
-  const isMember = true; // Replace with actual check
+  const isMember = club.isJoined; // Use isJoined from club object
   
   const joinClub = () => {
-    console.log('Joining club...');
+    onJoinToggle();
   };
   
   const leaveClub = () => {
-    console.log('Leaving club...');
+    onJoinToggle();
   };
   
   const openEventForm = () => {
@@ -59,6 +63,8 @@ const ClubDetailView = ({ clubId }: ClubDetailViewProps) => {
   const closeEventForm = () => {
     setShowEventForm(false);
   };
+  
+  if (!isOpen) return null;
   
   return (
     <div>
@@ -74,7 +80,7 @@ const ClubDetailView = ({ clubId }: ClubDetailViewProps) => {
             variant="outline" 
             size="icon" 
             className="bg-background/80 backdrop-blur"
-            onClick={() => navigate(-1)}
+            onClick={onClose}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

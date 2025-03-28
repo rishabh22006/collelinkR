@@ -46,7 +46,7 @@ const CommunityCard = ({ community }: { community: CommunityDataProps }) => {
       </motion.div>
 
       <CommunityDetailView 
-        community={{...community, isJoined}}
+        communityId={community.id.toString()}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onJoinToggle={handleJoinToggle}

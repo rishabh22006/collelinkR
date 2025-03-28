@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { Event } from '@/hooks/useEvents';
+import { Event } from '@/types/supabase';
+import { createNotification } from '@/hooks/useNotifications';
 
 interface HostEventParams {
   title: string;
@@ -25,32 +26,40 @@ export const useEventHost = () => {
   const canHostEvent = async (hostType: 'club' | 'community', hostId: string) => {
     if (!profile?.id) return false;
 
-    if (hostType === 'club') {
-      // For clubs, check if user is an admin
-      const { data, error } = await supabase
-        .rpc('is_club_admin', { club_uuid: hostId, user_uuid: profile.id });
+    try {
+      if (hostType === 'club') {
+        // For clubs, check if user is an admin
+        const { data, error } = await supabase
+          .rpc('is_club_admin', { 
+            club_uuid: hostId, 
+            user_uuid: profile.id 
+          });
 
-      if (error) {
-        console.error('Error checking club admin status:', error);
-        return false;
+        if (error) {
+          console.error('Error checking club admin status:', error);
+          return false;
+        }
+
+        return !!data;
+      } else if (hostType === 'community') {
+        // For communities, check if user is a member
+        const { data, error } = await supabase
+          .from('community_members')
+          .select('*')
+          .eq('community_id', hostId)
+          .eq('member_id', profile.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking community membership:', error);
+          return false;
+        }
+
+        return !!data;
       }
-
-      return !!data;
-    } else if (hostType === 'community') {
-      // For communities, check if user is a member
-      const { data, error } = await supabase
-        .from('community_members')
-        .select('*')
-        .eq('community_id', hostId)
-        .eq('member_id', profile.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking community membership:', error);
-        return false;
-      }
-
-      return !!data;
+    } catch (err) {
+      console.error('Error checking host permissions:', err);
+      return false;
     }
 
     return false;
@@ -69,28 +78,33 @@ export const useEventHost = () => {
         throw new Error(`You don't have permission to host events for this ${eventData.host_type}`);
       }
 
-      const { data, error } = await supabase
-        .from('events')
-        .insert({
-          title: eventData.title,
-          description: eventData.description,
-          date: eventData.date,
-          end_date: eventData.end_date,
-          location: eventData.location,
-          category: eventData.category,
-          image_url: eventData.image_url,
-          host_id: profile.id,
-          community_id: eventData.host_type === 'community' ? eventData.host_id : null,
-          host_type: eventData.host_type,
-        })
-        .select()
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .insert({
+            title: eventData.title,
+            description: eventData.description,
+            date: eventData.date,
+            end_date: eventData.end_date,
+            location: eventData.location,
+            category: eventData.category,
+            image_url: eventData.image_url,
+            host_id: profile.id,
+            community_id: eventData.host_type === 'community' ? eventData.host_id : null,
+            host_type: eventData.host_type,
+          })
+          .select()
+          .single();
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
+
+        return data as unknown as Event;
+      } catch (err) {
+        console.error('Failed to create event:', err);
+        throw err;
       }
-
-      return data as unknown as Event;
     },
     onSuccess: (data) => {
       toast.success('Event created successfully!');
@@ -98,9 +112,9 @@ export const useEventHost = () => {
       
       // Create notification for members
       if (data.host_type === 'club') {
-        notifyClubMembers(data.host_id, data.id, data.title);
+        notifyClubMembers(data.host_id || '', data.id, data.title);
       } else if (data.host_type === 'community') {
-        notifyCommunityMembers(data.host_id, data.id, data.title);
+        notifyCommunityMembers(data.community_id || '', data.id, data.title);
       }
     },
     onError: (error: Error) => {
@@ -125,18 +139,19 @@ export const useEventHost = () => {
       if (error) throw error;
 
       // Create notification for each member
-      for (const member of members) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: member.user_id,
+      for (const member of members || []) {
+        try {
+          await createNotification({
+            userId: member.user_id,
             title: 'New Club Event',
             content: `A new event "${eventTitle}" has been created by a club you're part of`,
             type: 'club',
-            sender_id: profile.id,
-            related_id: eventId,
-            read: false
+            senderId: profile.id,
+            relatedId: eventId
           });
+        } catch (err) {
+          console.error('Error creating notification:', err);
+        }
       }
     } catch (error) {
       console.error('Error notifying club members:', error);
@@ -158,18 +173,19 @@ export const useEventHost = () => {
       if (error) throw error;
 
       // Create notification for each member
-      for (const member of members) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: member.member_id,
+      for (const member of members || []) {
+        try {
+          await createNotification({
+            userId: member.member_id,
             title: 'New Community Event',
             content: `A new event "${eventTitle}" has been created in a community you're part of`,
             type: 'community',
-            sender_id: profile.id,
-            related_id: eventId,
-            read: false
+            senderId: profile.id,
+            relatedId: eventId
           });
+        } catch (err) {
+          console.error('Error creating notification:', err);
+        }
       }
     } catch (error) {
       console.error('Error notifying community members:', error);

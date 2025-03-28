@@ -45,7 +45,7 @@ const ClubCard = ({ club }: { club: ClubDataProps }) => {
       </motion.div>
 
       <ClubDetailView 
-        club={{...club, isJoined}}
+        clubId={club.id.toString()}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onJoinToggle={handleJoinToggle}
