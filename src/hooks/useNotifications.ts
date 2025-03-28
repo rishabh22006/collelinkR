@@ -1,58 +1,19 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { useEffect } from 'react';
+import { Notification, NotificationCategory } from '@/types/notifications';
+import { useNotificationFilters } from './useNotificationFilters';
+import { createNotification as createNotificationUtil } from '@/utils/notificationUtils';
 
-export interface Notification {
-  id: string;
-  user_id: string;
-  title: string;
-  content: string;
-  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
-  sender_id: string | null;
-  related_id: string | null;
-  read: boolean;
-  created_at: string;
-}
+// Re-export the createNotification function and types for convenience
+export { createNotification } from '@/utils/notificationUtils';
+export type { Notification, NotificationCategory } from '@/types/notifications';
 
-export type NotificationCategory = 'all' | 'unread' | 'messages' | 'events' | 'clubs' | 'communities' | 'other';
-
-export const createNotification = async ({
-  userId,
-  title,
-  content,
-  type,
-  senderId = null,
-  relatedId = null
-}: {
-  userId: string;
-  title: string;
-  content: string;
-  type: 'message' | 'event' | 'like' | 'achievement' | 'friend' | 'system' | 'club' | 'community';
-  senderId?: string | null;
-  relatedId?: string | null;
-}) => {
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      title,
-      content,
-      type,
-      sender_id: senderId,
-      related_id: relatedId,
-      read: false
-    })
-    .select();
-
-  if (error) {
-    console.error('Error creating notification:', error);
-    throw error;
-  }
-
-  return data[0] as Notification;
-};
-
+/**
+ * Hook for managing notifications
+ */
 export const useNotifications = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
@@ -83,21 +44,8 @@ export const useNotifications = () => {
     enabled: !!profile?.id,
   });
 
-  const getNotificationsByCategory = (category: NotificationCategory) => {
-    if (category === 'all') return notifications;
-    if (category === 'unread') return notifications.filter(n => !n.read);
-    if (category === 'messages') return notifications.filter(n => n.type === 'message');
-    if (category === 'events') return notifications.filter(n => n.type === 'event');
-    if (category === 'clubs') return notifications.filter(n => n.type === 'club');
-    if (category === 'communities') return notifications.filter(n => n.type === 'community');
-    if (category === 'other') {
-      return notifications.filter(n => 
-        !['message', 'event', 'club', 'community'].includes(n.type)
-      );
-    }
-    return [];
-  };
-
+  const { getNotificationsByCategory, getUnreadCounts } = useNotificationFilters(notifications);
+  
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = useMutation({
@@ -173,5 +121,6 @@ export const useNotifications = () => {
     markAsRead,
     markAllAsRead,
     getNotificationsByCategory,
+    getUnreadCounts: getUnreadCounts(),
   };
 };

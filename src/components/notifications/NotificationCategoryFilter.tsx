@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { NotificationCategory } from '@/hooks/useNotifications';
+import { NotificationCategory } from '@/types/notifications';
 
 interface NotificationCategoryFilterProps {
   selectedCategory: NotificationCategory;

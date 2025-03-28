@@ -19,21 +19,11 @@ const Notifications = () => {
     isLoading, 
     markAsRead, 
     markAllAsRead,
-    getNotificationsByCategory 
+    getNotificationsByCategory,
+    getUnreadCounts
   } = useNotifications();
 
   const filteredNotifications = getNotificationsByCategory(selectedCategory);
-
-  // Calculate unread counts by category
-  const unreadCounts = {
-    all: notifications.filter(n => !n.read).length,
-    unread: notifications.filter(n => !n.read).length,
-    messages: notifications.filter(n => !n.read && n.type === 'message').length,
-    events: notifications.filter(n => !n.read && n.type === 'event').length,
-    clubs: notifications.filter(n => !n.read && n.type === 'club').length,
-    communities: notifications.filter(n => !n.read && n.type === 'community').length,
-    other: notifications.filter(n => !n.read && !['message', 'event', 'club', 'community'].includes(n.type)).length,
-  };
 
   const handleMarkAsRead = (notificationId: string) => {
     markAsRead.mutate(notificationId);
@@ -83,7 +73,7 @@ const Notifications = () => {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">Notifications</h1>
           
-          {unreadCounts.all > 0 && (
+          {getUnreadCounts.all > 0 && (
             <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
               <Check className="h-4 w-4 mr-2" />
               Mark all as read
@@ -94,7 +84,7 @@ const Notifications = () => {
         <NotificationCategoryFilter
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
-          unreadCounts={unreadCounts}
+          unreadCounts={getUnreadCounts}
         />
 
         <h2 className="text-xl font-semibold mb-4">{getCategoryTitle(selectedCategory)}</h2>

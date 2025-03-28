@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { createNotification } from '@/hooks/useNotifications';
+import { createNotification } from '@/utils/notificationUtils';
 
 /**
  * Utility functions for event-related notifications
@@ -18,10 +18,10 @@ export const useEventNotifications = () => {
     try {
       // Get all club members except the host
       const { data: members, error } = await supabase
-        .from('club_members')
-        .select('user_id')
-        .eq('club_id', clubId)
-        .neq('user_id', profile.id);
+        .from('community_members')  // Use community_members instead of club_members
+        .select('member_id')
+        .eq('community_id', clubId)
+        .neq('member_id', profile.id);
 
       if (error) throw error;
 
@@ -29,7 +29,7 @@ export const useEventNotifications = () => {
       for (const member of members || []) {
         try {
           await createNotification({
-            userId: member.user_id,
+            userId: member.member_id,
             title: 'New Club Event',
             content: `A new event "${eventTitle}" has been created by a club you're part of`,
             type: 'club',

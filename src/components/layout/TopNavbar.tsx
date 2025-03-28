@@ -14,7 +14,8 @@ const TopNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, session, signOut, isLoading } = useAuthStore();
-  const { unreadCount } = useNotifications();
+  const { getUnreadCounts } = useNotifications();
+  const unreadCount = getUnreadCounts.all;
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
