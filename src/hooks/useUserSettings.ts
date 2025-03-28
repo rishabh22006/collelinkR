@@ -102,7 +102,7 @@ export const useUserSettings = () => {
       user_id: profile.id,
       theme: defaultSettings.theme,
       language: defaultSettings.language,
-      notifications: defaultSettings.notifications
+      notifications: defaultSettings.notifications as unknown as JSON // Cast to JSON for database compatibility
     };
     
     const { data, error } = await supabase
