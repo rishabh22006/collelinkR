@@ -22,7 +22,7 @@ const CustomBadge = ({
     default: 'bg-muted text-muted-foreground',
     primary: 'bg-primary text-primary-foreground',
     secondary: 'bg-secondary text-secondary-foreground',
-    outline: 'border border-accent bg-transparent text-foreground',
+    outline: 'border border-border bg-transparent text-foreground',
     live: 'bg-accent text-accent-foreground animate-pulse-soft',
   };
 
