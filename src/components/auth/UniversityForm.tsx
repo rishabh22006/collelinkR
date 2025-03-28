@@ -35,7 +35,11 @@ const UniversityForm = ({ onComplete }: UniversityFormProps) => {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onComplete(values);
+    // Ensure both properties are always present by providing defaults
+    onComplete({
+      university: values.university || "mit-adt", // Default fallback
+      college: values.college || "", // Default fallback
+    });
   };
 
   return (
