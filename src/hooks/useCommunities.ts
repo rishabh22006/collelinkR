@@ -11,13 +11,13 @@ type BasicCommunity = {
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
-  is_featured: boolean | null;
-  is_private: boolean | null;
-  is_verified: boolean | null;
+  is_featured?: boolean | null; // Make optional with default
+  is_private?: boolean | null;
+  is_verified?: boolean | null; // Make optional with default
   created_at: string;
   updated_at: string | null;
   creator_id: string | null;
-  max_admins: number;
+  max_admins?: number;
 };
 
 // Use a concrete type definition for mutations
@@ -72,7 +72,12 @@ export const useCommunities = (): UseCommunities => {
         return [];
       }
 
-      return data || [];
+      // Apply default values for potentially missing fields
+      return (data || []).map(community => ({
+        ...community,
+        is_featured: community.is_featured || false,
+        is_verified: community.is_verified || false
+      })) as BasicCommunity[];
     } catch (err) {
       console.error('Failed to fetch communities:', err);
       return [];
@@ -93,14 +98,19 @@ export const useCommunities = (): UseCommunities => {
         return [];
       }
 
-      return data || [];
+      // Apply default values for potentially missing fields
+      return (data || []).map(community => ({
+        ...community,
+        is_featured: true, // We know this is true based on the query
+        is_verified: community.is_verified || false
+      })) as BasicCommunity[];
     } catch (err) {
       console.error('Failed to fetch featured communities:', err);
       return [];
     }
   };
 
-  // Get community details
+  // Get community details - explicitly define return type to avoid deep nesting
   const getCommunity = async (communityId: string): Promise<CommunityDetails | null> => {
     try {
       // Get community details
@@ -115,7 +125,7 @@ export const useCommunities = (): UseCommunities => {
         return null;
       }
 
-      // Get member count
+      // Get member count with a separate query to avoid type nesting
       const { count: membersCount, error: countError } = await supabase
         .from('community_members')
         .select('*', { count: 'exact', head: true })
@@ -126,12 +136,14 @@ export const useCommunities = (): UseCommunities => {
       }
 
       // Process the data to add members_count
-      const community = {
+      const community: CommunityDetails = {
         ...data,
-        members_count: membersCount || 0
+        members_count: membersCount || 0,
+        is_featured: data.is_featured || false,
+        is_verified: data.is_verified || false
       };
 
-      return community as CommunityDetails;
+      return community;
     } catch (err) {
       console.error('Failed to fetch community:', err);
       return null;
