@@ -51,5 +51,5 @@ export interface UseCommunities {
   // Query functions
   getAllCommunities: () => Promise<BasicCommunity[]>;
   getFeaturedCommunities: () => Promise<BasicCommunity[]>;
-  getCommunity: (communityId: string) => Promise<Partial<CommunityDetails> | null>;
+  getCommunity: (communityId: string) => Promise<CommunityDetails | null>;
 }
