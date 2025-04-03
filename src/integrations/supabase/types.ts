@@ -355,7 +355,9 @@ export type Database = {
           creator_id: string | null
           description: string | null
           id: string
+          is_featured: boolean | null
           is_private: boolean | null
+          is_verified: boolean | null
           logo_url: string | null
           max_admins: number
           name: string
@@ -367,7 +369,9 @@ export type Database = {
           creator_id?: string | null
           description?: string | null
           id?: string
+          is_featured?: boolean | null
           is_private?: boolean | null
+          is_verified?: boolean | null
           logo_url?: string | null
           max_admins?: number
           name: string
@@ -379,7 +383,9 @@ export type Database = {
           creator_id?: string | null
           description?: string | null
           id?: string
+          is_featured?: boolean | null
           is_private?: boolean | null
+          is_verified?: boolean | null
           logo_url?: string | null
           max_admins?: number
           name?: string
