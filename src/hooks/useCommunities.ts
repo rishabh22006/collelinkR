@@ -4,12 +4,12 @@ import { useCommunityMembership } from './useCommunityMembership';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityDetails } from './useClubTypes';
 
-// Define simpler type for mutations to avoid deep nesting
+// Define simpler type for mutations
 type MutationResult = {
   mutateAsync: (params: any) => Promise<any>;
 };
 
-// Define an explicit return type to avoid deep type nesting
+// Define the interface with explicit types
 interface UseCommunities {
   // Admin functions
   isCommunityAdmin: (communityId: string) => Promise<boolean>;
@@ -35,6 +35,9 @@ interface UseCommunities {
   getCommunity: (communityId: string) => Promise<CommunityDetails | null>;
 }
 
+/**
+ * Hook for community functionality
+ */
 export const useCommunities = (): UseCommunities => {
   // Get admin and membership functionality
   const communityAdmin = useCommunityAdmin();
