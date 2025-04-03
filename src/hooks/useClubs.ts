@@ -1,8 +1,8 @@
 
 import { useClubQuery } from './useClubQuery';
-import { useClubAdmin } from './useClubAdmin';
+import { useClubAdmin } from './club/useClubAdmin';
 import { useClubMembership } from './useClubMembership';
-import { Club, ClubDetails, ClubMembershipStatus } from './useClubTypes';
+import { Club, ClubDetails, ClubMembershipStatus } from './club/clubTypes';
 
 export type { Club, ClubDetails, ClubMembershipStatus };
 

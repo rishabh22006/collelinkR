@@ -3,136 +3,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { Club, AdminManagementResult } from './useClubTypes';
+import { AdminManagementResult, ClubMemberWithProfile } from './clubTypes';
 
 /**
- * Hook for club administration functionality
+ * Hook for club management functionality
  */
-export const useClubAdmin = () => {
+export const useClubManagement = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
-
-  // Check if user is a club admin
-  const isClubAdmin = async (clubId: string) => {
-    if (!profile?.id) return false;
-
-    try {
-      // Using direct query instead of RPC
-      const { data, error } = await supabase
-        .from('club_admins')
-        .select('*')
-        .eq('club_id', clubId)
-        .eq('user_id', profile.id)
-        .single();
-
-      if (error) {
-        console.error('Error checking club admin status:', error);
-        return false;
-      }
-
-      return !!data;
-    } catch (err) {
-      console.error('Failed to check club admin status:', err);
-      return false;
-    }
-  };
-
-  // Check if user is the club creator
-  const isClubCreator = async (clubId: string) => {
-    if (!profile?.id) return false;
-
-    try {
-      // Using direct query instead of RPC
-      const { data, error } = await supabase
-        .from('clubs')
-        .select('creator_id')
-        .eq('id', clubId)
-        .single();
-
-      if (error) {
-        console.error('Error checking club creator status:', error);
-        return false;
-      }
-
-      return data.creator_id === profile.id;
-    } catch (err) {
-      console.error('Failed to check club creator status:', err);
-      return false;
-    }
-  };
-
-  // Create a new club
-  const createClub = useMutation({
-    mutationFn: async (clubData: {
-      name: string;
-      description?: string;
-      institution?: string;
-      logo_url?: string;
-      banner_url?: string;
-    }) => {
-      if (!profile?.id) {
-        throw new Error('You must be logged in to create a club');
-      }
-
-      try {
-        // Create the club first
-        const { data: newClub, error: clubError } = await supabase
-          .from('clubs')
-          .insert({
-            name: clubData.name,
-            description: clubData.description || null,
-            institution: clubData.institution || null,
-            logo_url: clubData.logo_url || null,
-            banner_url: clubData.banner_url || null,
-            creator_id: profile.id
-          })
-          .select()
-          .single();
-
-        if (clubError) {
-          throw clubError;
-        }
-
-        // Make creator an admin
-        const { error: adminError } = await supabase
-          .from('club_admins')
-          .insert({
-            club_id: newClub.id,
-            user_id: profile.id
-          });
-
-        if (adminError) {
-          throw adminError;
-        }
-
-        // Also make creator a member
-        const { error: memberError } = await supabase
-          .from('club_members')
-          .insert({
-            club_id: newClub.id,
-            user_id: profile.id
-          });
-
-        if (memberError) {
-          throw memberError;
-        }
-
-        return newClub as Club;
-      } catch (err) {
-        console.error('Failed to create club:', err);
-        throw err;
-      }
-    },
-    onSuccess: () => {
-      toast.success('Club created successfully');
-      queryClient.invalidateQueries({ queryKey: ['clubs'] });
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to create club', {
-        description: error.message,
-      });
-    },
-  });
 
   // Add an admin to a club
   const addClubAdmin = useMutation({
@@ -344,7 +222,7 @@ export const useClubAdmin = () => {
   });
 
   // Get club members with admin status
-  const getClubMembers = async (clubId: string) => {
+  const getClubMembers = async (clubId: string): Promise<ClubMemberWithProfile[]> => {
     try {
       const { data: members, error: membersError } = await supabase
         .from('club_members')
@@ -401,12 +279,9 @@ export const useClubAdmin = () => {
   };
 
   return {
-    isClubAdmin,
-    isClubCreator,
-    createClub,
     addClubAdmin,
     removeClubAdmin,
     transferClubOwnership,
-    getClubMembers,
+    getClubMembers
   };
 };

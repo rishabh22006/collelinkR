@@ -22,8 +22,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Shield, UserMinus, Crown, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useClubAdmin } from '@/hooks/useClubAdmin';
-import { ClubMemberWithProfile } from '@/hooks/useClubTypes';
+import { useClubAdmin } from '@/hooks/club/useClubAdmin';
+import { ClubMemberWithProfile } from '@/hooks/club/clubTypes';
 import { useAuthStore } from '@/stores/authStore';
 
 interface AdminManagementProps {
