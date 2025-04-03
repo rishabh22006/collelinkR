@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, UserPlus, UserCheck, UserMinus, CalendarPlus, Award, Calendar, Settings, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +30,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
   const [showAdminManagement, setShowAdminManagement] = useState(false);
   const { getClub, isClubAdmin, getClubMembershipStatus, joinClub, leaveClub } = useClubs();
   
-  // Fetch club details
   const { 
     data: clubDetails, 
     isLoading,
@@ -42,7 +40,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
     enabled: isOpen && !!clubId
   });
   
-  // Fetch membership status
   const {
     data: membershipStatus,
     isLoading: isStatusLoading,
@@ -53,7 +50,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
     enabled: isOpen && !!clubId && !!profile?.id
   });
   
-  // Fetch club members
   const {
     data: members,
     isLoading: isMembersLoading,
@@ -61,8 +57,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
   } = useQuery({
     queryKey: ['club-members', clubId],
     queryFn: async () => {
-      // This would be a real function call to your backend to get members with profiles
-      // For example purposes, we'll mock this
       const mockMembers: ClubMemberWithProfile[] = [
         { 
           user_id: '1', 
@@ -81,7 +75,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
       ];
       
       if (profile?.id) {
-        // Add current user for demo purposes
         mockMembers.push({
           user_id: profile.id,
           joined_at: new Date().toISOString(),
@@ -138,19 +131,16 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
   
   const closeAdminManagement = () => {
     setShowAdminManagement(false);
-    // Refetch club data after admin changes
     refetchClub();
     refetchMembers();
     refetchStatus();
   };
   
-  // Default events if clubDetails doesn't have them
   const defaultEvents = [
     { id: '1', title: 'Photo Walk', date: '2023-06-15', attendees: 24 },
     { id: '2', title: 'Portrait Workshop', date: '2023-07-10', attendees: 18 },
   ];
   
-  // Dummy club data for now or use fetched data
   const club = clubDetails || {
     id: clubId,
     name: 'Photography Club',
@@ -162,15 +152,12 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
     events: defaultEvents
   };
 
-  // Get the correct member count no matter which naming convention is used
   const getMemberCount = () => {
     if (clubDetails?.member_count !== undefined) return clubDetails.member_count;
     if (clubDetails?.members_count !== undefined) return clubDetails.members_count;
-    if (club.member_count !== undefined) return club.member_count;
-    return club.members_count || 0;
+    return club.member_count || 0;
   };
 
-  // Get events safely handling both naming conventions
   const getEvents = () => {
     return (clubDetails?.events || club.events || defaultEvents);
   };
@@ -179,7 +166,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
   
   return (
     <div>
-      {/* Banner and Basic Info */}
       <div className="relative">
         <div 
           className="w-full h-48 bg-cover bg-center"
@@ -259,7 +245,6 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
       
       <Separator className="my-4" />
       
-      {/* Tabs */}
       <Tabs defaultValue="events" className="w-full px-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="events">Events</TabsTrigger>

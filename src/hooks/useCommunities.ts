@@ -89,7 +89,7 @@ export const useCommunities = () => {
     }
   };
 
-  // Return all functions from both hooks plus our query functions
+  // Return functionality from all hooks
   return {
     // Admin functions
     isCommunityAdmin: communityAdmin.isCommunityAdmin,
