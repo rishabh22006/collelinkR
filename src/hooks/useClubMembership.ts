@@ -15,7 +15,7 @@ export const useClubMembership = () => {
   // Get membership status (is member and is admin)
   const getClubMembershipStatus = async (clubId: string): Promise<ClubMembershipStatus> => {
     if (!profile?.id) {
-      return { isMember: false, isAdmin: false };
+      return { isMember: false, isAdmin: false, isCreator: false };
     }
 
     try {
@@ -28,7 +28,7 @@ export const useClubMembership = () => {
 
       if (memberError) {
         console.error('Error checking club membership:', memberError);
-        return { isMember: false, isAdmin: false };
+        return { isMember: false, isAdmin: false, isCreator: false };
       }
 
       // Check if user is an admin
@@ -40,16 +40,29 @@ export const useClubMembership = () => {
 
       if (adminError) {
         console.error('Error checking club admin status:', adminError);
-        return { isMember: !!isMember, isAdmin: false };
+        return { isMember: !!isMember, isAdmin: false, isCreator: false };
+      }
+
+      // Check if user is the creator
+      const { data: isCreator, error: creatorError } = await supabase
+        .rpc('is_club_creator', { 
+          club_uuid: clubId, 
+          user_uuid: profile.id 
+        });
+
+      if (creatorError) {
+        console.error('Error checking club creator status:', creatorError);
+        return { isMember: !!isMember, isAdmin: !!isAdmin, isCreator: false };
       }
 
       return { 
         isMember: !!isMember, 
-        isAdmin: !!isAdmin 
+        isAdmin: !!isAdmin,
+        isCreator: !!isCreator
       };
     } catch (err) {
       console.error('Failed to check club membership status:', err);
-      return { isMember: false, isAdmin: false };
+      return { isMember: false, isAdmin: false, isCreator: false };
     }
   };
 

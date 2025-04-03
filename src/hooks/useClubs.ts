@@ -20,13 +20,18 @@ export const useClubs = () => {
 
   const {
     isClubAdmin,
+    isClubCreator,
     createClub,
+    addClubAdmin,
+    removeClubAdmin,
+    transferClubOwnership,
+    getClubMembers,
   } = useClubAdmin();
 
   const {
+    getClubMembershipStatus,
     joinClub,
     leaveClub,
-    getClubMembershipStatus,
   } = useClubMembership();
 
   // Return all functionality from all hooks
@@ -42,11 +47,16 @@ export const useClubs = () => {
     
     // Admin functionality
     isClubAdmin,
+    isClubCreator,
     createClub,
+    addClubAdmin,
+    removeClubAdmin,
+    transferClubOwnership,
+    getClubMembers,
     
     // Membership management
+    getClubMembershipStatus,
     joinClub,
     leaveClub,
-    getClubMembershipStatus,
   };
 };

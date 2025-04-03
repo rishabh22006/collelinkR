@@ -14,6 +14,7 @@ export interface Club {
   is_verified: boolean | null;
   created_at: string;
   updated_at: string | null;
+  creator_id?: string | null;
 }
 
 export interface ClubMember {
@@ -34,9 +35,25 @@ export interface ClubDetails extends Club {
   members_count?: number;
   is_member?: boolean;
   is_admin?: boolean;
+  is_creator?: boolean;
 }
 
 export interface ClubMembershipStatus {
   isMember: boolean;
   isAdmin: boolean;
+  isCreator: boolean;
+}
+
+export interface ClubMemberWithProfile {
+  user_id: string;
+  joined_at: string;
+  is_admin: boolean;
+  display_name: string;
+  avatar_url: string | null;
+}
+
+export interface AdminManagementResult {
+  success: boolean;
+  error?: string;
+  message: string;
 }

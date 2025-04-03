@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_action_logs: {
+        Row: {
+          action_type: string
+          affected_user: string | null
+          created_at: string
+          details: Json | null
+          entity_id: string
+          entity_type: string
+          id: string
+          performed_by: string
+        }
+        Insert: {
+          action_type: string
+          affected_user?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          performed_by: string
+        }
+        Update: {
+          action_type?: string
+          affected_user?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          performed_by?: string
+        }
+        Relationships: []
+      }
       certificates: {
         Row: {
           certificate_type: Database["public"]["Enums"]["certificate_type"]
@@ -197,6 +230,7 @@ export type Database = {
         Row: {
           banner_url: string | null
           created_at: string
+          creator_id: string | null
           description: string | null
           id: string
           institution: string | null
@@ -209,6 +243,7 @@ export type Database = {
         Insert: {
           banner_url?: string | null
           created_at?: string
+          creator_id?: string | null
           description?: string | null
           id?: string
           institution?: string | null
@@ -221,6 +256,7 @@ export type Database = {
         Update: {
           banner_url?: string | null
           created_at?: string
+          creator_id?: string | null
           description?: string | null
           id?: string
           institution?: string | null
@@ -979,6 +1015,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_club_admin: {
+        Args: {
+          club_uuid: string
+          user_uuid: string
+          requesting_user_uuid?: string
+        }
+        Returns: Json
+      }
+      add_community_admin: {
+        Args: {
+          community_uuid: string
+          user_uuid: string
+          requesting_user_uuid?: string
+        }
+        Returns: Json
+      }
       check_message_read_only_update: {
         Args: {
           content_old: string
@@ -1000,6 +1052,7 @@ export type Database = {
         Returns: {
           banner_url: string | null
           created_at: string
+          creator_id: string | null
           description: string | null
           id: string
           institution: string | null
@@ -1015,6 +1068,7 @@ export type Database = {
         Returns: {
           banner_url: string | null
           created_at: string
+          creator_id: string | null
           description: string | null
           id: string
           institution: string | null
@@ -1054,6 +1108,7 @@ export type Database = {
         Returns: {
           banner_url: string | null
           created_at: string
+          creator_id: string | null
           description: string | null
           id: string
           institution: string | null
@@ -1084,6 +1139,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_club_creator: {
+        Args: {
+          club_uuid: string
+          user_uuid?: string
+        }
+        Returns: boolean
+      }
       is_club_member: {
         Args: {
           club_uuid: string
@@ -1095,6 +1157,13 @@ export type Database = {
         Args: {
           community_uuid: string
           user_uuid: string
+        }
+        Returns: boolean
+      }
+      is_community_creator: {
+        Args: {
+          community_uuid: string
+          user_uuid?: string
         }
         Returns: boolean
       }
@@ -1121,6 +1190,38 @@ export type Database = {
         Args: {
           club_uuid: string
           user_uuid: string
+        }
+        Returns: boolean
+      }
+      remove_club_admin: {
+        Args: {
+          club_uuid: string
+          user_uuid: string
+          requesting_user_uuid?: string
+        }
+        Returns: Json
+      }
+      remove_community_admin: {
+        Args: {
+          community_uuid: string
+          user_uuid: string
+          requesting_user_uuid?: string
+        }
+        Returns: Json
+      }
+      transfer_club_ownership: {
+        Args: {
+          club_uuid: string
+          old_owner_uuid: string
+          new_owner_uuid: string
+        }
+        Returns: boolean
+      }
+      transfer_community_ownership: {
+        Args: {
+          community_uuid: string
+          old_owner_uuid: string
+          new_owner_uuid: string
         }
         Returns: boolean
       }

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Image, Users, MapPin, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,9 @@ import TopNavbar from '@/components/layout/TopNavbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { useClubs } from '@/hooks/useClubs';
+import { useCommunities } from '@/hooks/useCommunities';
 
 const CreatePost = () => {
   const navigate = useNavigate();
@@ -21,7 +24,54 @@ const CreatePost = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selectedCommunity, setSelectedCommunity] = useState<string | null>(null);
+  const [postType, setPostType] = useState<'personal' | 'club' | 'community'>('personal');
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  
+  const { clubs } = useClubs();
+  const { getAllCommunities } = useCommunities();
+  
+  // Fetch clubs where user is a member
+  const { data: userClubs = [] } = useQuery({
+    queryKey: ['user-clubs'],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('club_members')
+        .select('club_id, clubs(*)')
+        .eq('user_id', profile.id);
+      
+      if (error) {
+        console.error('Error fetching user clubs:', error);
+        return [];
+      }
+      
+      return data.map(item => item.clubs);
+    },
+    enabled: !!profile?.id
+  });
+  
+  // Fetch communities where user is a member
+  const { data: userCommunities = [] } = useQuery({
+    queryKey: ['user-communities'],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('community_members')
+        .select('community_id, communities(*)')
+        .eq('member_id', profile.id);
+      
+      if (error) {
+        console.error('Error fetching user communities:', error);
+        return [];
+      }
+      
+      return data.map(item => item.communities);
+    },
+    enabled: !!profile?.id
+  });
   
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +88,12 @@ const CreatePost = () => {
     }
   };
   
+  const handlePostTypeChange = (value: string) => {
+    setPostType(value as 'personal' | 'club' | 'community');
+    setSelectedClubId(null);
+    setSelectedCommunityId(null);
+  };
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +105,16 @@ const CreatePost = () => {
     
     if (!content.trim()) {
       toast.error('Please enter some content for your post');
+      return;
+    }
+    
+    if (postType === 'club' && !selectedClubId) {
+      toast.error('Please select a club for your post');
+      return;
+    }
+    
+    if (postType === 'community' && !selectedCommunityId) {
+      toast.error('Please select a community for your post');
       return;
     }
     
@@ -80,15 +146,19 @@ const CreatePost = () => {
         mediaUrls = [urlData.publicUrl];
       }
       
-      // Create the post
+      // Create the post with appropriate community_id based on post type
+      const postData = {
+        author_id: session.user.id,
+        content,
+        media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+        community_id: postType === 'community' ? selectedCommunityId : 
+                    postType === 'club' ? selectedClubId : 
+                    null
+      };
+      
       const { data, error } = await supabase
         .from('posts')
-        .insert({
-          author_id: session.user.id,
-          content,
-          media_urls: mediaUrls.length > 0 ? mediaUrls : null,
-          community_id: selectedCommunity
-        })
+        .insert(postData)
         .select();
         
       if (error) {
@@ -182,19 +252,66 @@ const CreatePost = () => {
               </div>
               
               <div className="w-[200px]">
-                <Label htmlFor="community" className="sr-only">Select community</Label>
-                <Select value={selectedCommunity || undefined} onValueChange={setSelectedCommunity}>
-                  <SelectTrigger id="community">
-                    <SelectValue placeholder="Select community" />
+                <Label htmlFor="postType" className="sr-only">Post type</Label>
+                <Select value={postType} onValueChange={handlePostTypeChange}>
+                  <SelectTrigger id="postType">
+                    <SelectValue placeholder="Select post type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Personal Post</SelectItem>
-                    <SelectItem value="community-1">Photography Club</SelectItem>
-                    <SelectItem value="community-2">Debate Society</SelectItem>
-                    <SelectItem value="community-3">AI & ML Research</SelectItem>
+                    <SelectItem value="personal">Personal Post</SelectItem>
+                    <SelectItem value="club">Club Post</SelectItem>
+                    <SelectItem value="community">Community Post</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              {postType === 'club' && (
+                <div className="w-[200px]">
+                  <Label htmlFor="club" className="sr-only">Select club</Label>
+                  <Select value={selectedClubId || undefined} onValueChange={setSelectedClubId}>
+                    <SelectTrigger id="club">
+                      <SelectValue placeholder="Select club" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userClubs.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          You're not a member of any clubs
+                        </SelectItem>
+                      ) : (
+                        userClubs.map((club) => (
+                          <SelectItem key={club.id} value={club.id}>
+                            {club.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {postType === 'community' && (
+                <div className="w-[200px]">
+                  <Label htmlFor="community" className="sr-only">Select community</Label>
+                  <Select value={selectedCommunityId || undefined} onValueChange={setSelectedCommunityId}>
+                    <SelectTrigger id="community">
+                      <SelectValue placeholder="Select community" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userCommunities.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          You're not a member of any communities
+                        </SelectItem>
+                      ) : (
+                        userCommunities.map((community) => (
+                          <SelectItem key={community.id} value={community.id}>
+                            {community.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             
             <div className="flex justify-end mt-6">
