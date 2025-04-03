@@ -4,7 +4,22 @@ import { useCommunityMembership } from './useCommunityMembership';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityDetails } from './useClubTypes';
 
-// Use a concrete type definition instead of letting TypeScript infer complex nested types
+// Define concrete types for community data to avoid complex type inference
+type BasicCommunity = {
+  id: string;
+  name: string;
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  is_featured: boolean | null;
+  is_private: boolean | null;
+  is_verified: boolean | null;
+  created_at: string;
+  updated_at: string | null;
+  creator_id: string | null;
+};
+
+// Use a concrete type definition for mutations
 type MutationResult = {
   mutateAsync: (params: any) => Promise<any>;
 };
@@ -30,8 +45,8 @@ interface UseCommunities {
   leaveCommunity: MutationResult;
   
   // Query functions
-  getAllCommunities: () => Promise<any[]>;
-  getFeaturedCommunities: () => Promise<any[]>;
+  getAllCommunities: () => Promise<BasicCommunity[]>;
+  getFeaturedCommunities: () => Promise<BasicCommunity[]>;
   getCommunity: (communityId: string) => Promise<CommunityDetails | null>;
 }
 
@@ -44,7 +59,7 @@ export const useCommunities = (): UseCommunities => {
   const communityMembership = useCommunityMembership();
 
   // Get all communities
-  const getAllCommunities = async (): Promise<any[]> => {
+  const getAllCommunities = async (): Promise<BasicCommunity[]> => {
     try {
       const { data, error } = await supabase
         .from('communities')
@@ -64,7 +79,7 @@ export const useCommunities = (): UseCommunities => {
   };
 
   // Get featured communities
-  const getFeaturedCommunities = async (): Promise<any[]> => {
+  const getFeaturedCommunities = async (): Promise<BasicCommunity[]> => {
     try {
       const { data, error } = await supabase
         .from('communities')
