@@ -183,12 +183,12 @@ const CreatePost = () => {
               
               <div className="w-[200px]">
                 <Label htmlFor="community" className="sr-only">Select community</Label>
-                <Select value={selectedCommunity || ''} onValueChange={setSelectedCommunity}>
+                <Select value={selectedCommunity || undefined} onValueChange={setSelectedCommunity}>
                   <SelectTrigger id="community">
                     <SelectValue placeholder="Select community" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Personal Post</SelectItem>
+                    <SelectItem value="none">Personal Post</SelectItem>
                     <SelectItem value="community-1">Photography Club</SelectItem>
                     <SelectItem value="community-2">Debate Society</SelectItem>
                     <SelectItem value="community-3">AI & ML Research</SelectItem>
