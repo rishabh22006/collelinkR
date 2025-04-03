@@ -11,9 +11,9 @@ type BasicCommunity = {
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
-  is_featured?: boolean | null; // Make optional with default
+  is_featured?: boolean | null; 
   is_private?: boolean | null;
-  is_verified?: boolean | null; // Make optional with default
+  is_verified?: boolean | null; 
   created_at: string;
   updated_at: string | null;
   creator_id: string | null;
@@ -72,12 +72,28 @@ export const useCommunities = (): UseCommunities => {
         return [];
       }
 
-      // Apply default values for potentially missing fields
-      return (data || []).map(community => ({
-        ...community,
-        is_featured: community.is_featured || false,
-        is_verified: community.is_verified || false
-      })) as BasicCommunity[];
+      // Process data to ensure consistent structure
+      const communities = (data || []).map(community => {
+        // Create a properly typed community object with default values
+        const typedCommunity: BasicCommunity = {
+          id: community.id,
+          name: community.name,
+          description: community.description,
+          logo_url: community.logo_url,
+          banner_url: community.banner_url,
+          created_at: community.created_at,
+          updated_at: community.updated_at,
+          creator_id: community.creator_id,
+          is_private: community.is_private || false,
+          // Optional fields with defaults
+          is_featured: 'is_featured' in community ? community.is_featured : false,
+          is_verified: 'is_verified' in community ? community.is_verified : false,
+          max_admins: community.max_admins || 4
+        };
+        return typedCommunity;
+      });
+
+      return communities;
     } catch (err) {
       console.error('Failed to fetch communities:', err);
       return [];
@@ -98,19 +114,35 @@ export const useCommunities = (): UseCommunities => {
         return [];
       }
 
-      // Apply default values for potentially missing fields
-      return (data || []).map(community => ({
-        ...community,
-        is_featured: true, // We know this is true based on the query
-        is_verified: community.is_verified || false
-      })) as BasicCommunity[];
+      // Process data to ensure consistent structure
+      const communities = (data || []).map(community => {
+        // Create a properly typed community object with default values
+        const typedCommunity: BasicCommunity = {
+          id: community.id,
+          name: community.name,
+          description: community.description,
+          logo_url: community.logo_url,
+          banner_url: community.banner_url,
+          created_at: community.created_at,
+          updated_at: community.updated_at,
+          creator_id: community.creator_id,
+          is_private: community.is_private || false,
+          // We know is_featured is true based on the query
+          is_featured: true,
+          is_verified: 'is_verified' in community ? community.is_verified : false,
+          max_admins: community.max_admins || 4
+        };
+        return typedCommunity;
+      });
+
+      return communities;
     } catch (err) {
       console.error('Failed to fetch featured communities:', err);
       return [];
     }
   };
 
-  // Get community details - explicitly define return type to avoid deep nesting
+  // Get community details with explicit typing
   const getCommunity = async (communityId: string): Promise<CommunityDetails | null> => {
     try {
       // Get community details
@@ -125,7 +157,7 @@ export const useCommunities = (): UseCommunities => {
         return null;
       }
 
-      // Get member count with a separate query to avoid type nesting
+      // Get member count with a separate query
       const { count: membersCount, error: countError } = await supabase
         .from('community_members')
         .select('*', { count: 'exact', head: true })
@@ -135,12 +167,23 @@ export const useCommunities = (): UseCommunities => {
         console.error('Error counting members:', countError);
       }
 
-      // Process the data to add members_count
+      // Explicitly define the community details with the correct type
+      // and provide default values where needed
       const community: CommunityDetails = {
-        ...data,
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        logo_url: data.logo_url,
+        banner_url: data.banner_url,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        creator_id: data.creator_id,
+        is_private: data.is_private || false,
+        max_admins: data.max_admins || 4,
         members_count: membersCount || 0,
-        is_featured: data.is_featured || false,
-        is_verified: data.is_verified || false
+        // Handle potentially missing fields
+        is_featured: 'is_featured' in data ? data.is_featured : false,
+        is_verified: 'is_verified' in data ? data.is_verified : false
       };
 
       return community;
