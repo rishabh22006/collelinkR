@@ -6,9 +6,9 @@ export type BasicCommunity = {
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
-  is_featured?: boolean | null; 
-  is_private?: boolean | null;
-  is_verified?: boolean | null; 
+  is_featured?: boolean; 
+  is_private?: boolean;
+  is_verified?: boolean;
   created_at: string;
   updated_at: string | null;
   creator_id: string | null;
@@ -21,23 +21,11 @@ export type MutationResult = {
 };
 
 // Explicitly define CommunityDetails to prevent recursion
-export interface CommunityDetails {
-  id: string;
-  name: string;
-  description: string | null;
-  logo_url: string | null;
-  banner_url: string | null;
-  is_private?: boolean;
-  is_featured?: boolean;
-  is_verified?: boolean;
-  creator_id?: string | null;
-  created_at: string;
-  updated_at: string | null;
+export interface CommunityDetails extends BasicCommunity {
   members_count?: number;
   is_member?: boolean;
   is_admin?: boolean;
   is_creator?: boolean;
-  max_admins?: number;
 }
 
 // Define the interface with explicit types
@@ -63,5 +51,5 @@ export interface UseCommunities {
   // Query functions
   getAllCommunities: () => Promise<BasicCommunity[]>;
   getFeaturedCommunities: () => Promise<BasicCommunity[]>;
-  getCommunity: (communityId: string) => Promise<CommunityDetails | null>;
+  getCommunity: (communityId: string) => Promise<Partial<CommunityDetails> | null>;
 }

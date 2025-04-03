@@ -20,25 +20,20 @@ export const useCommunityQueries = () => {
       }
 
       // Process data to ensure consistent structure
-      const communities = (data || []).map(community => {
-        // Create a properly typed community object with default values
-        const typedCommunity: BasicCommunity = {
-          id: community.id,
-          name: community.name,
-          description: community.description,
-          logo_url: community.logo_url,
-          banner_url: community.banner_url,
-          created_at: community.created_at,
-          updated_at: community.updated_at,
-          creator_id: community.creator_id,
-          is_private: Boolean(community.is_private),
-          // Optional fields with defaults
-          is_featured: 'is_featured' in community ? Boolean(community.is_featured) : false,
-          is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
-          max_admins: community.max_admins || 4
-        };
-        return typedCommunity;
-      });
+      const communities = (data || []).map(community => ({
+        id: community.id,
+        name: community.name,
+        description: community.description,
+        logo_url: community.logo_url,
+        banner_url: community.banner_url,
+        created_at: community.created_at,
+        updated_at: community.updated_at,
+        creator_id: community.creator_id,
+        is_private: Boolean(community.is_private),
+        is_featured: 'is_featured' in community ? Boolean(community.is_featured) : false,
+        is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
+        max_admins: community.max_admins || 4
+      } as BasicCommunity));
 
       return communities;
     } catch (err) {
@@ -62,25 +57,21 @@ export const useCommunityQueries = () => {
       }
 
       // Process data to ensure consistent structure
-      const communities = (data || []).map(community => {
-        // Create a properly typed community object with default values
-        const typedCommunity: BasicCommunity = {
-          id: community.id,
-          name: community.name,
-          description: community.description,
-          logo_url: community.logo_url,
-          banner_url: community.banner_url,
-          created_at: community.created_at,
-          updated_at: community.updated_at,
-          creator_id: community.creator_id,
-          is_private: Boolean(community.is_private),
-          // We know is_featured is true based on the query
-          is_featured: true,
-          is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
-          max_admins: community.max_admins || 4
-        };
-        return typedCommunity;
-      });
+      const communities = (data || []).map(community => ({
+        id: community.id,
+        name: community.name,
+        description: community.description,
+        logo_url: community.logo_url,
+        banner_url: community.banner_url,
+        created_at: community.created_at,
+        updated_at: community.updated_at,
+        creator_id: community.creator_id,
+        is_private: Boolean(community.is_private),
+        // We know is_featured is true based on the query
+        is_featured: true,
+        is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
+        max_admins: community.max_admins || 4
+      } as BasicCommunity));
 
       return communities;
     } catch (err) {
@@ -90,7 +81,7 @@ export const useCommunityQueries = () => {
   };
 
   // Get community details with explicit typing
-  const getCommunity = async (communityId: string): Promise<CommunityDetails | null> => {
+  const getCommunity = async (communityId: string): Promise<Partial<CommunityDetails> | null> => {
     try {
       // Get community details
       const { data, error } = await supabase
@@ -114,8 +105,8 @@ export const useCommunityQueries = () => {
         console.error('Error counting members:', countError);
       }
 
-      // Use type assertion to avoid deep type instantiation
-      const community = {
+      // Use type assertion with Pick<> to limit properties and avoid excessive recursion
+      return {
         id: data.id,
         name: data.name,
         description: data.description,
@@ -127,12 +118,9 @@ export const useCommunityQueries = () => {
         is_private: Boolean(data.is_private),
         max_admins: data.max_admins || 4,
         members_count: membersCount || 0,
-        // Handle potentially missing fields
         is_featured: 'is_featured' in data ? Boolean(data.is_featured) : false,
         is_verified: 'is_verified' in data ? Boolean(data.is_verified) : false
-      } as CommunityDetails;
-
-      return community;
+      } as Pick<CommunityDetails, keyof CommunityDetails>;
     } catch (err) {
       console.error('Failed to fetch community:', err);
       return null;
