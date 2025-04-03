@@ -84,10 +84,10 @@ export const useCommunities = (): UseCommunities => {
           created_at: community.created_at,
           updated_at: community.updated_at,
           creator_id: community.creator_id,
-          is_private: community.is_private || false,
+          is_private: community.is_private === true,
           // Optional fields with defaults
-          is_featured: 'is_featured' in community ? community.is_featured : false,
-          is_verified: 'is_verified' in community ? community.is_verified : false,
+          is_featured: 'is_featured' in community ? Boolean(community.is_featured) : false,
+          is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
           max_admins: community.max_admins || 4
         };
         return typedCommunity;
@@ -126,10 +126,10 @@ export const useCommunities = (): UseCommunities => {
           created_at: community.created_at,
           updated_at: community.updated_at,
           creator_id: community.creator_id,
-          is_private: community.is_private || false,
+          is_private: community.is_private === true,
           // We know is_featured is true based on the query
           is_featured: true,
-          is_verified: 'is_verified' in community ? community.is_verified : false,
+          is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
           max_admins: community.max_admins || 4
         };
         return typedCommunity;
@@ -178,12 +178,12 @@ export const useCommunities = (): UseCommunities => {
         created_at: data.created_at,
         updated_at: data.updated_at,
         creator_id: data.creator_id,
-        is_private: data.is_private || false,
+        is_private: data.is_private === true,
         max_admins: data.max_admins || 4,
         members_count: membersCount || 0,
         // Handle potentially missing fields
-        is_featured: 'is_featured' in data ? data.is_featured : false,
-        is_verified: 'is_verified' in data ? data.is_verified : false
+        is_featured: 'is_featured' in data ? Boolean(data.is_featured) : false,
+        is_verified: 'is_verified' in data ? Boolean(data.is_verified) : false
       };
 
       return community;
