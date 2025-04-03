@@ -5,15 +5,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityDetails } from './useClubTypes';
 
+// Define simpler type for mutations to avoid deep nesting
+type MutationResult = {
+  mutateAsync: (params: any) => Promise<any>;
+};
+
 // Define an explicit return type to avoid deep type nesting
 interface UseCommunities {
   // Admin functions
   isCommunityAdmin: (communityId: string) => Promise<boolean>;
   isCommunityCreator: (communityId: string) => Promise<boolean>;
-  createCommunity: ReturnType<typeof useCommunityAdmin>['createCommunity'];
-  addCommunityAdmin: ReturnType<typeof useCommunityAdmin>['addCommunityAdmin'];
-  removeCommunityAdmin: ReturnType<typeof useCommunityAdmin>['removeCommunityAdmin'];
-  transferCommunityOwnership: ReturnType<typeof useCommunityAdmin>['transferCommunityOwnership'];
+  createCommunity: MutationResult;
+  addCommunityAdmin: MutationResult;
+  removeCommunityAdmin: MutationResult;
+  transferCommunityOwnership: MutationResult;
   getCommunityMembers: (communityId: string) => Promise<any[]>;
   
   // Membership functions
@@ -22,8 +27,8 @@ interface UseCommunities {
     isAdmin: boolean;
     isCreator: boolean;
   }>;
-  joinCommunity: ReturnType<typeof useCommunityMembership>['joinCommunity'];
-  leaveCommunity: ReturnType<typeof useCommunityMembership>['leaveCommunity'];
+  joinCommunity: MutationResult;
+  leaveCommunity: MutationResult;
   
   // Query functions
   getAllCommunities: () => Promise<any[]>;
