@@ -164,10 +164,10 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
 
   // Get the correct member count no matter which naming convention is used
   const getMemberCount = () => {
-    if (clubDetails?.members_count !== undefined) return clubDetails.members_count;
     if (clubDetails?.member_count !== undefined) return clubDetails.member_count;
-    if (club.members_count !== undefined) return club.members_count;
-    return club.member_count || 0;
+    if (clubDetails?.members_count !== undefined) return clubDetails.members_count;
+    if (club.member_count !== undefined) return club.member_count;
+    return club.members_count || 0;
   };
 
   // Get events safely handling both naming conventions

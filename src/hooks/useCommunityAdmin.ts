@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -183,13 +182,16 @@ export const useCommunityAdmin = () => {
           .eq('role', 'admin');
 
         // Get max admins from communities table
-        const { data: community } = await supabase
+        const { data: communityData } = await supabase
           .from('communities')
           .select('max_admins')
           .eq('id', communityId)
           .single();
 
-        const maxAdmins = community?.max_admins || 4;
+        // Default to 4 if max_admins is not set or there's an error
+        const maxAdmins = (communityData && 'max_admins' in communityData) 
+          ? communityData.max_admins 
+          : 4;
 
         if (count && count >= maxAdmins) {
           return {

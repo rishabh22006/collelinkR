@@ -33,8 +33,9 @@ export interface ClubAdmin {
 }
 
 export interface ClubDetails extends Club {
+  // Support both naming conventions for member count
   members_count?: number;
-  member_count?: number; // Add compatibility with both naming conventions
+  member_count?: number;
   is_member?: boolean;
   is_admin?: boolean;
   is_creator?: boolean;
