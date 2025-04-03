@@ -5,7 +5,33 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityDetails } from './useClubTypes';
 
-export const useCommunities = () => {
+// Define an explicit return type to avoid deep type nesting
+interface UseCommunities {
+  // Admin functions
+  isCommunityAdmin: (communityId: string) => Promise<boolean>;
+  isCommunityCreator: (communityId: string) => Promise<boolean>;
+  createCommunity: ReturnType<typeof useCommunityAdmin>['createCommunity'];
+  addCommunityAdmin: ReturnType<typeof useCommunityAdmin>['addCommunityAdmin'];
+  removeCommunityAdmin: ReturnType<typeof useCommunityAdmin>['removeCommunityAdmin'];
+  transferCommunityOwnership: ReturnType<typeof useCommunityAdmin>['transferCommunityOwnership'];
+  getCommunityMembers: (communityId: string) => Promise<any[]>;
+  
+  // Membership functions
+  getCommunityMembershipStatus: (communityId: string) => Promise<{
+    isMember: boolean;
+    isAdmin: boolean;
+    isCreator: boolean;
+  }>;
+  joinCommunity: ReturnType<typeof useCommunityMembership>['joinCommunity'];
+  leaveCommunity: ReturnType<typeof useCommunityMembership>['leaveCommunity'];
+  
+  // Query functions
+  getAllCommunities: () => Promise<any[]>;
+  getFeaturedCommunities: () => Promise<any[]>;
+  getCommunity: (communityId: string) => Promise<CommunityDetails | null>;
+}
+
+export const useCommunities = (): UseCommunities => {
   // Get admin and membership functionality
   const communityAdmin = useCommunityAdmin();
   const communityMembership = useCommunityMembership();
@@ -89,7 +115,7 @@ export const useCommunities = () => {
     }
   };
 
-  // Create an explicit interface for the combined return type to avoid deep nesting
+  // Return an object that matches our explicit interface
   return {
     // Admin functions
     isCommunityAdmin: communityAdmin.isCommunityAdmin,
