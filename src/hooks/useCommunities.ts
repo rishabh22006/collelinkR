@@ -4,7 +4,7 @@ import { useCommunityMembership } from './useCommunityMembership';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityDetails } from './useClubTypes';
 
-// Define simpler type for mutations
+// Use a concrete type definition instead of letting TypeScript infer complex nested types
 type MutationResult = {
   mutateAsync: (params: any) => Promise<any>;
 };
@@ -44,7 +44,7 @@ export const useCommunities = (): UseCommunities => {
   const communityMembership = useCommunityMembership();
 
   // Get all communities
-  const getAllCommunities = async () => {
+  const getAllCommunities = async (): Promise<any[]> => {
     try {
       const { data, error } = await supabase
         .from('communities')
@@ -64,7 +64,7 @@ export const useCommunities = (): UseCommunities => {
   };
 
   // Get featured communities
-  const getFeaturedCommunities = async () => {
+  const getFeaturedCommunities = async (): Promise<any[]> => {
     try {
       const { data, error } = await supabase
         .from('communities')
@@ -122,7 +122,7 @@ export const useCommunities = (): UseCommunities => {
     }
   };
 
-  // Return an object that matches our explicit interface
+  // Return an object that explicitly matches our interface to avoid type inference issues
   return {
     // Admin functions
     isCommunityAdmin: communityAdmin.isCommunityAdmin,
