@@ -31,6 +31,9 @@ export interface ClubDetails extends Club {
   }>;
 }
 
+// Import the CommunityDetails type from communityTypes to re-export
+export type { CommunityDetails } from '../community/communityTypes';
+
 export interface ClubMembershipStatus {
   isMember: boolean;
   isAdmin: boolean;

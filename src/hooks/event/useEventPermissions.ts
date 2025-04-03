@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { useClubAdmin } from '@/hooks/useClubAdmin';
+import { useClubAdmin } from '../club/useClubAdmin';
 
 /**
  * Utility functions for checking event host permissions

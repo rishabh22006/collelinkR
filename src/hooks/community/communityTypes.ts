@@ -20,6 +20,26 @@ export type MutationResult = {
   mutateAsync: (params: any) => Promise<any>;
 };
 
+// Explicitly define CommunityDetails to prevent recursion
+export interface CommunityDetails {
+  id: string;
+  name: string;
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  is_private?: boolean;
+  is_featured?: boolean;
+  is_verified?: boolean;
+  creator_id?: string | null;
+  created_at: string;
+  updated_at: string | null;
+  members_count?: number;
+  is_member?: boolean;
+  is_admin?: boolean;
+  is_creator?: boolean;
+  max_admins?: number;
+}
+
 // Define the interface with explicit types
 export interface UseCommunities {
   // Admin functions
@@ -44,24 +64,4 @@ export interface UseCommunities {
   getAllCommunities: () => Promise<BasicCommunity[]>;
   getFeaturedCommunities: () => Promise<BasicCommunity[]>;
   getCommunity: (communityId: string) => Promise<CommunityDetails | null>;
-}
-
-// Import this from the original file to maintain compatibility
-export interface CommunityDetails {
-  id: string;
-  name: string;
-  description: string | null;
-  logo_url: string | null;
-  banner_url: string | null;
-  is_private?: boolean | null;
-  is_featured?: boolean | null;
-  is_verified?: boolean | null;
-  creator_id?: string | null;
-  created_at: string;
-  updated_at: string | null;
-  members_count?: number;
-  is_member?: boolean;
-  is_admin?: boolean;
-  is_creator?: boolean;
-  max_admins?: number;
 }

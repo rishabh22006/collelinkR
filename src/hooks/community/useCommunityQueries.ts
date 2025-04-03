@@ -31,7 +31,7 @@ export const useCommunityQueries = () => {
           created_at: community.created_at,
           updated_at: community.updated_at,
           creator_id: community.creator_id,
-          is_private: community.is_private === true,
+          is_private: Boolean(community.is_private),
           // Optional fields with defaults
           is_featured: 'is_featured' in community ? Boolean(community.is_featured) : false,
           is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
@@ -73,7 +73,7 @@ export const useCommunityQueries = () => {
           created_at: community.created_at,
           updated_at: community.updated_at,
           creator_id: community.creator_id,
-          is_private: community.is_private === true,
+          is_private: Boolean(community.is_private),
           // We know is_featured is true based on the query
           is_featured: true,
           is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
@@ -114,8 +114,8 @@ export const useCommunityQueries = () => {
         console.error('Error counting members:', countError);
       }
 
-      // Explicitly create a new object to avoid deep type instantiation issues
-      const community: CommunityDetails = {
+      // Use type assertion to avoid deep type instantiation
+      const community = {
         id: data.id,
         name: data.name,
         description: data.description,
@@ -124,13 +124,13 @@ export const useCommunityQueries = () => {
         created_at: data.created_at,
         updated_at: data.updated_at,
         creator_id: data.creator_id,
-        is_private: data.is_private === true,
+        is_private: Boolean(data.is_private),
         max_admins: data.max_admins || 4,
         members_count: membersCount || 0,
         // Handle potentially missing fields
         is_featured: 'is_featured' in data ? Boolean(data.is_featured) : false,
         is_verified: 'is_verified' in data ? Boolean(data.is_verified) : false
-      };
+      } as CommunityDetails;
 
       return community;
     } catch (err) {
