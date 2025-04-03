@@ -89,7 +89,7 @@ export const useCommunities = () => {
     }
   };
 
-  // Return functionality from all hooks
+  // Create an explicit interface for the combined return type to avoid deep nesting
   return {
     // Admin functions
     isCommunityAdmin: communityAdmin.isCommunityAdmin,
