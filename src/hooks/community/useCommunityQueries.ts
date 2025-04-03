@@ -11,7 +11,7 @@ export const useCommunityQueries = () => {
     try {
       const { data, error } = await supabase
         .from('communities')
-        .select('*')
+        .select('id, name, description, logo_url, banner_url, created_at, updated_at, creator_id, is_private, is_featured, is_verified, max_admins')
         .order('name');
 
       if (error) {
@@ -19,23 +19,13 @@ export const useCommunityQueries = () => {
         return [];
       }
 
-      // Process data to ensure consistent structure
-      const communities = (data || []).map(community => ({
-        id: community.id,
-        name: community.name,
-        description: community.description,
-        logo_url: community.logo_url,
-        banner_url: community.banner_url,
-        created_at: community.created_at,
-        updated_at: community.updated_at,
-        creator_id: community.creator_id,
+      return (data || []).map(community => ({
+        ...community,
         is_private: Boolean(community.is_private),
-        is_featured: 'is_featured' in community ? Boolean(community.is_featured) : false,
-        is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
-        max_admins: community.max_admins || 4
-      } as BasicCommunity));
-
-      return communities;
+        is_featured: Boolean(community.is_featured),
+        is_verified: Boolean(community.is_verified),
+        max_admins: community.max_admins || 4,
+      }));
     } catch (err) {
       console.error('Failed to fetch communities:', err);
       return [];
@@ -47,7 +37,7 @@ export const useCommunityQueries = () => {
     try {
       const { data, error } = await supabase
         .from('communities')
-        .select('*')
+        .select('id, name, description, logo_url, banner_url, created_at, updated_at, creator_id, is_private, is_featured, is_verified, max_admins')
         .eq('is_featured', true)
         .order('name');
 
@@ -56,37 +46,26 @@ export const useCommunityQueries = () => {
         return [];
       }
 
-      // Process data to ensure consistent structure
-      const communities = (data || []).map(community => ({
-        id: community.id,
-        name: community.name,
-        description: community.description,
-        logo_url: community.logo_url,
-        banner_url: community.banner_url,
-        created_at: community.created_at,
-        updated_at: community.updated_at,
-        creator_id: community.creator_id,
+      return (data || []).map(community => ({
+        ...community,
         is_private: Boolean(community.is_private),
-        // We know is_featured is true based on the query
-        is_featured: true,
-        is_verified: 'is_verified' in community ? Boolean(community.is_verified) : false,
-        max_admins: community.max_admins || 4
-      } as BasicCommunity));
-
-      return communities;
+        is_featured: true, // Already filtered by query
+        is_verified: Boolean(community.is_verified),
+        max_admins: community.max_admins || 4,
+      }));
     } catch (err) {
       console.error('Failed to fetch featured communities:', err);
       return [];
     }
   };
 
-  // Get community details with explicit typing
-  const getCommunity = async (communityId: string): Promise<Partial<CommunityDetails> | null> => {
+  // Get community details
+  const getCommunity = async (communityId: string): Promise<CommunityDetails | null> => {
     try {
       // Get community details
       const { data, error } = await supabase
         .from('communities')
-        .select('*')
+        .select('id, name, description, logo_url, banner_url, created_at, updated_at, creator_id, is_private, is_featured, is_verified, max_admins')
         .eq('id', communityId)
         .single();
 
@@ -95,7 +74,7 @@ export const useCommunityQueries = () => {
         return null;
       }
 
-      // Get member count with a separate query
+      // Get member count separately
       const { count: membersCount, error: countError } = await supabase
         .from('community_members')
         .select('*', { count: 'exact', head: true })
@@ -105,22 +84,14 @@ export const useCommunityQueries = () => {
         console.error('Error counting members:', countError);
       }
 
-      // Use type assertion with Pick<> to limit properties and avoid excessive recursion
       return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        logo_url: data.logo_url,
-        banner_url: data.banner_url,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        creator_id: data.creator_id,
+        ...data,
         is_private: Boolean(data.is_private),
+        is_featured: Boolean(data.is_featured),
+        is_verified: Boolean(data.is_verified),
         max_admins: data.max_admins || 4,
         members_count: membersCount || 0,
-        is_featured: 'is_featured' in data ? Boolean(data.is_featured) : false,
-        is_verified: 'is_verified' in data ? Boolean(data.is_verified) : false
-      } as Pick<CommunityDetails, keyof CommunityDetails>;
+      };
     } catch (err) {
       console.error('Failed to fetch community:', err);
       return null;
