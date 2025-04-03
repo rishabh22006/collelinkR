@@ -17,6 +17,7 @@ type BasicCommunity = {
   created_at: string;
   updated_at: string | null;
   creator_id: string | null;
+  max_admins: number;
 };
 
 // Use a concrete type definition for mutations
