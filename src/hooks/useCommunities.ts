@@ -6,22 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { CommunityDetails } from './useClubTypes';
 
 export const useCommunities = () => {
-  // Combine admin and membership functionality
-  const {
-    isCommunityAdmin,
-    isCommunityCreator,
-    createCommunity,
-    addCommunityAdmin,
-    removeCommunityAdmin,
-    transferCommunityOwnership,
-    getCommunityMembers,
-  } = useCommunityAdmin();
-
-  const {
-    getCommunityMembershipStatus,
-    joinCommunity,
-    leaveCommunity,
-  } = useCommunityMembership();
+  // Get admin and membership functionality
+  const communityAdmin = useCommunityAdmin();
+  const communityMembership = useCommunityMembership();
 
   // Get all communities
   const getAllCommunities = async () => {
@@ -102,20 +89,21 @@ export const useCommunities = () => {
     }
   };
 
+  // Return all functions from both hooks plus our query functions
   return {
     // Admin functions
-    isCommunityAdmin,
-    isCommunityCreator,
-    createCommunity,
-    addCommunityAdmin,
-    removeCommunityAdmin,
-    transferCommunityOwnership,
-    getCommunityMembers,
+    isCommunityAdmin: communityAdmin.isCommunityAdmin,
+    isCommunityCreator: communityAdmin.isCommunityCreator,
+    createCommunity: communityAdmin.createCommunity,
+    addCommunityAdmin: communityAdmin.addCommunityAdmin,
+    removeCommunityAdmin: communityAdmin.removeCommunityAdmin,
+    transferCommunityOwnership: communityAdmin.transferCommunityOwnership,
+    getCommunityMembers: communityAdmin.getCommunityMembers,
     
     // Membership functions
-    getCommunityMembershipStatus,
-    joinCommunity,
-    leaveCommunity,
+    getCommunityMembershipStatus: communityMembership.getCommunityMembershipStatus,
+    joinCommunity: communityMembership.joinCommunity,
+    leaveCommunity: communityMembership.leaveCommunity,
     
     // Query functions
     getAllCommunities,

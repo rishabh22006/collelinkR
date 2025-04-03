@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, UserPlus, UserMinus, CalendarPlus, Award, Calendar, Settings, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +36,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
     getCommunityMembers
   } = useCommunities();
   
-  // Fetch community details
   const { 
     data: communityDetails, 
     isLoading,
@@ -48,7 +46,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
     enabled: isOpen && !!communityId
   });
   
-  // Fetch membership status
   const {
     data: membershipStatus,
     isLoading: isStatusLoading,
@@ -59,7 +56,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
     enabled: isOpen && !!communityId && !!profile?.id
   });
   
-  // Fetch community members
   const {
     data: members,
     isLoading: isMembersLoading,
@@ -67,8 +63,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
   } = useQuery({
     queryKey: ['community-members', communityId],
     queryFn: async () => {
-      // For demo purposes we'll use mock data
-      // In a real app, you'd fetch from your backend
       const mockMembers = [
         {
           member_id: '1',
@@ -87,7 +81,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
       ];
       
       if (profile?.id) {
-        // Add current user for demo purposes
         mockMembers.push({
           member_id: profile.id,
           joined_at: new Date().toISOString(),
@@ -144,19 +137,16 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
   
   const closeAdminManagement = () => {
     setShowAdminManagement(false);
-    // Refetch community data after admin changes
     refetchCommunity();
     refetchMembers();
     refetchStatus();
   };
   
-  // Sample events data
   const events = [
     { id: '1', title: 'Design Workshop', date: '2023-06-15', attendees: 32 },
     { id: '2', title: 'UX Research Session', date: '2023-07-10', attendees: 24 },
   ];
   
-  // Dummy community data for now
   const community = communityDetails || {
     id: communityId,
     name: 'UI/UX Design Community',
@@ -171,7 +161,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
   
   return (
     <div>
-      {/* Banner and Basic Info */}
       <div className="relative">
         <div 
           className="w-full h-48 bg-cover bg-center"
@@ -198,7 +187,8 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{community.name}</h1>
-              {(communityDetails?.is_verified || (community as any).is_verified) && (
+              {(communityDetails?.is_verified !== undefined ? communityDetails.is_verified : 
+                 (community as any).is_verified) && (
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   <Award className="h-3 w-3 mr-1" />
                   Verified
@@ -219,7 +209,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
                 </Button>
               )}
               
-              {/* Any member can host events, but only admins can manage the community */}
               {isMember && (
                 <Button onClick={openEventForm}>
                   <CalendarPlus className="h-4 w-4 mr-2" />
@@ -253,7 +242,6 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
       
       <Separator className="my-4" />
       
-      {/* Tabs */}
       <Tabs defaultValue="events" className="w-full px-4">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="events">Events</TabsTrigger>

@@ -237,6 +237,7 @@ export type Database = {
           is_featured: boolean | null
           is_verified: boolean | null
           logo_url: string | null
+          max_admins: number
           name: string
           updated_at: string | null
         }
@@ -250,6 +251,7 @@ export type Database = {
           is_featured?: boolean | null
           is_verified?: boolean | null
           logo_url?: string | null
+          max_admins?: number
           name: string
           updated_at?: string | null
         }
@@ -263,6 +265,7 @@ export type Database = {
           is_featured?: boolean | null
           is_verified?: boolean | null
           logo_url?: string | null
+          max_admins?: number
           name?: string
           updated_at?: string | null
         }
@@ -354,6 +357,7 @@ export type Database = {
           id: string
           is_private: boolean | null
           logo_url: string | null
+          max_admins: number
           name: string
           updated_at: string | null
         }
@@ -365,6 +369,7 @@ export type Database = {
           id?: string
           is_private?: boolean | null
           logo_url?: string | null
+          max_admins?: number
           name: string
           updated_at?: string | null
         }
@@ -376,6 +381,7 @@ export type Database = {
           id?: string
           is_private?: boolean | null
           logo_url?: string | null
+          max_admins?: number
           name?: string
           updated_at?: string | null
         }
@@ -1059,6 +1065,7 @@ export type Database = {
           is_featured: boolean | null
           is_verified: boolean | null
           logo_url: string | null
+          max_admins: number
           name: string
           updated_at: string | null
         }
@@ -1075,6 +1082,7 @@ export type Database = {
           is_featured: boolean | null
           is_verified: boolean | null
           logo_url: string | null
+          max_admins: number
           name: string
           updated_at: string | null
         }[]
@@ -1115,6 +1123,7 @@ export type Database = {
           is_featured: boolean | null
           is_verified: boolean | null
           logo_url: string | null
+          max_admins: number
           name: string
           updated_at: string | null
         }[]

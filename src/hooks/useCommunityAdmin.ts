@@ -123,7 +123,7 @@ export const useCommunityAdmin = () => {
 
   // Add an admin to a community
   const addCommunityAdmin = useMutation({
-    mutationFn: async ({ communityId, userId }: { communityId: string, userId: string }) => {
+    mutationFn: async ({ communityId, userId }: { communityId: string, userId: string }): Promise<AdminManagementResult> => {
       try {
         // Check if requester has permission (is an admin)
         if (!profile?.id) {
@@ -131,7 +131,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'not_authenticated',
             message: 'You must be logged in to perform this action'
-          } as AdminManagementResult;
+          };
         }
 
         const { data: requesterAdmin } = await supabase
@@ -147,7 +147,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'permission_denied',
             message: 'You do not have permission to add admins'
-          } as AdminManagementResult;
+          };
         }
 
         // Check if the user is already a member
@@ -172,7 +172,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'already_admin',
             message: 'User is already an admin'
-          } as AdminManagementResult;
+          };
         }
 
         // Count current admins
@@ -196,7 +196,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'max_admins_reached',
             message: `Maximum number of admins (${maxAdmins}) reached`
-          } as AdminManagementResult;
+          };
         }
 
         // Update to admin role
@@ -213,7 +213,7 @@ export const useCommunityAdmin = () => {
         return {
           success: true,
           message: 'Admin added successfully'
-        } as AdminManagementResult;
+        };
       } catch (err) {
         console.error('Failed to add admin:', err);
         throw err;
@@ -237,7 +237,7 @@ export const useCommunityAdmin = () => {
 
   // Remove an admin from a community
   const removeCommunityAdmin = useMutation({
-    mutationFn: async ({ communityId, userId }: { communityId: string, userId: string }) => {
+    mutationFn: async ({ communityId, userId }: { communityId: string, userId: string }): Promise<AdminManagementResult> => {
       try {
         // Check if requester has permission (is an admin)
         if (!profile?.id) {
@@ -245,7 +245,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'not_authenticated',
             message: 'You must be logged in to perform this action'
-          } as AdminManagementResult;
+          };
         }
 
         const { data: requesterAdmin } = await supabase
@@ -261,7 +261,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'permission_denied',
             message: 'You do not have permission to remove admins'
-          } as AdminManagementResult;
+          };
         }
 
         // Check if user is the community creator
@@ -276,7 +276,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'creator_removal',
             message: 'Cannot remove the community creator. Transfer ownership first.'
-          } as AdminManagementResult;
+          };
         }
 
         // Count current admins
@@ -292,7 +292,7 @@ export const useCommunityAdmin = () => {
             success: false,
             error: 'last_admin',
             message: 'Cannot remove the last admin'
-          } as AdminManagementResult;
+          };
         }
 
         // Downgrade to regular member
@@ -310,7 +310,7 @@ export const useCommunityAdmin = () => {
         return {
           success: true,
           message: 'Admin removed successfully'
-        } as AdminManagementResult;
+        };
       } catch (err) {
         console.error('Failed to remove admin:', err);
         throw err;

@@ -161,6 +161,19 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
     logo_url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32',
     events: defaultEvents
   };
+
+  // Get the correct member count no matter which naming convention is used
+  const getMemberCount = () => {
+    if (clubDetails?.members_count !== undefined) return clubDetails.members_count;
+    if (clubDetails?.member_count !== undefined) return clubDetails.member_count;
+    if (club.members_count !== undefined) return club.members_count;
+    return club.member_count || 0;
+  };
+
+  // Get events safely handling both naming conventions
+  const getEvents = () => {
+    return (clubDetails?.events || club.events || defaultEvents);
+  };
   
   if (!isOpen) return null;
   
@@ -230,7 +243,7 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
           
           <div className="mt-2 flex items-center text-muted-foreground">
             <Users className="h-4 w-4 mr-1" />
-            <span>{clubDetails?.members_count || club.member_count || 0} members</span>
+            <span>{getMemberCount()} members</span>
             
             {isAdmin && (
               <Badge variant="outline" className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-200">
@@ -260,11 +273,11 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
             Upcoming Events
           </h3>
           
-          {(!(clubDetails?.events || club.events) || (clubDetails?.events || club.events)?.length === 0) ? (
+          {(!getEvents() || getEvents().length === 0) ? (
             <p className="text-muted-foreground text-center py-6">No upcoming events</p>
           ) : (
             <div className="space-y-3">
-              {(clubDetails?.events || club.events)?.map(event => (
+              {getEvents().map(event => (
                 <motion.div 
                   key={event.id}
                   whileHover={{ scale: 1.01 }}
@@ -312,7 +325,7 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
           <h3 className="font-medium mb-3">Club Members</h3>
           
           <p className="text-muted-foreground">
-            This club has {clubDetails?.members_count || club.member_count || 0} members in total.
+            This club has {getMemberCount()} members in total.
           </p>
           
           <div className="space-y-2 mt-4">

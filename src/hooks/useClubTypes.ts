@@ -15,6 +15,7 @@ export interface Club {
   created_at: string;
   updated_at: string | null;
   creator_id?: string | null;
+  max_admins?: number;
 }
 
 export interface ClubMember {
@@ -33,6 +34,7 @@ export interface ClubAdmin {
 
 export interface ClubDetails extends Club {
   members_count?: number;
+  member_count?: number; // Add compatibility with both naming conventions
   is_member?: boolean;
   is_admin?: boolean;
   is_creator?: boolean;
@@ -80,4 +82,5 @@ export interface CommunityDetails {
   is_member?: boolean;
   is_admin?: boolean;
   is_creator?: boolean;
+  max_admins?: number;
 }

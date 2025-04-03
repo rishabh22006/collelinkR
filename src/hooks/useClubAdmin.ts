@@ -17,7 +17,7 @@ export const useClubAdmin = () => {
     if (!profile?.id) return false;
 
     try {
-      // Using RPC function to check admin status
+      // Using direct query instead of RPC
       const { data, error } = await supabase
         .from('club_admins')
         .select('*')
@@ -42,6 +42,7 @@ export const useClubAdmin = () => {
     if (!profile?.id) return false;
 
     try {
+      // Using direct query instead of RPC
       const { data, error } = await supabase
         .from('clubs')
         .select('creator_id')
@@ -74,8 +75,8 @@ export const useClubAdmin = () => {
       }
 
       try {
-        // Create the club
-        const { data: clubData, error: clubError } = await supabase
+        // Create the club first
+        const { data: newClub, error: clubError } = await supabase
           .from('clubs')
           .insert({
             name: clubData.name,
@@ -96,7 +97,7 @@ export const useClubAdmin = () => {
         const { error: adminError } = await supabase
           .from('club_admins')
           .insert({
-            club_id: clubData.id,
+            club_id: newClub.id,
             user_id: profile.id
           });
 
@@ -108,7 +109,7 @@ export const useClubAdmin = () => {
         const { error: memberError } = await supabase
           .from('club_members')
           .insert({
-            club_id: clubData.id,
+            club_id: newClub.id,
             user_id: profile.id
           });
 
@@ -116,7 +117,7 @@ export const useClubAdmin = () => {
           throw memberError;
         }
 
-        return clubData as Club;
+        return newClub as Club;
       } catch (err) {
         console.error('Failed to create club:', err);
         throw err;
@@ -135,10 +136,10 @@ export const useClubAdmin = () => {
 
   // Add an admin to a club
   const addClubAdmin = useMutation({
-    mutationFn: async ({ clubId, userId }: { clubId: string, userId: string }) => {
+    mutationFn: async ({ clubId, userId }: { clubId: string, userId: string }): Promise<AdminManagementResult> => {
       try {
         // Check if the user is already an admin
-        const { data: existingAdmin, error: checkError } = await supabase
+        const { data: existingAdmin } = await supabase
           .from('club_admins')
           .select('*')
           .eq('club_id', clubId)
@@ -150,7 +151,7 @@ export const useClubAdmin = () => {
             success: false,
             error: 'already_admin',
             message: 'User is already an admin'
-          } as AdminManagementResult;
+          };
         }
 
         // Add as admin
@@ -185,7 +186,7 @@ export const useClubAdmin = () => {
         return {
           success: true,
           message: 'Admin added successfully'
-        } as AdminManagementResult;
+        };
       } catch (err) {
         console.error('Failed to add admin:', err);
         throw err;
@@ -209,7 +210,7 @@ export const useClubAdmin = () => {
 
   // Remove an admin from a club
   const removeClubAdmin = useMutation({
-    mutationFn: async ({ clubId, userId }: { clubId: string, userId: string }) => {
+    mutationFn: async ({ clubId, userId }: { clubId: string, userId: string }): Promise<AdminManagementResult> => {
       try {
         // Check if this is the creator trying to remove themselves
         const { data: club } = await supabase
@@ -223,7 +224,7 @@ export const useClubAdmin = () => {
             success: false,
             error: 'creator_removal',
             message: 'Cannot remove the club creator. Transfer ownership first.'
-          } as AdminManagementResult;
+          };
         }
 
         // Count current admins
@@ -238,7 +239,7 @@ export const useClubAdmin = () => {
             success: false,
             error: 'last_admin',
             message: 'Cannot remove the last admin'
-          } as AdminManagementResult;
+          };
         }
 
         // Remove admin
@@ -255,7 +256,7 @@ export const useClubAdmin = () => {
         return {
           success: true,
           message: 'Admin removed successfully'
-        } as AdminManagementResult;
+        };
       } catch (err) {
         console.error('Failed to remove admin:', err);
         throw err;
