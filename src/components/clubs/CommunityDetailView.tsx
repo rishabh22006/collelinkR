@@ -14,6 +14,7 @@ import { useCommunities } from '@/hooks/useCommunities';
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import CommunityAdminManagement from '@/components/communities/CommunityAdminManagement';
+import { CommunityDetails } from '@/hooks/useClubTypes';
 
 export interface CommunityDetailViewProps {
   communityId: string;
@@ -197,7 +198,7 @@ const CommunityDetailView = ({ communityId, isOpen, onClose, onJoinToggle, isJoi
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{community.name}</h1>
-              {community.is_verified && (
+              {(communityDetails?.is_verified || (community as any).is_verified) && (
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   <Award className="h-3 w-3 mr-1" />
                   Verified

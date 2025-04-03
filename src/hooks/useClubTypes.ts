@@ -36,6 +36,12 @@ export interface ClubDetails extends Club {
   is_member?: boolean;
   is_admin?: boolean;
   is_creator?: boolean;
+  events?: Array<{
+    id: string;
+    title: string;
+    date: string;
+    attendees: number;
+  }>;
 }
 
 export interface ClubMembershipStatus {
@@ -56,4 +62,22 @@ export interface AdminManagementResult {
   success: boolean;
   error?: string;
   message: string;
+}
+
+export interface CommunityDetails {
+  id: string;
+  name: string;
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  is_private?: boolean | null;
+  is_featured?: boolean | null;
+  is_verified?: boolean | null;
+  creator_id?: string | null;
+  created_at: string;
+  updated_at: string | null;
+  members_count?: number;
+  is_member?: boolean;
+  is_admin?: boolean;
+  is_creator?: boolean;
 }

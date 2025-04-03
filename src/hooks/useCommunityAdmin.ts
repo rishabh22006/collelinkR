@@ -17,12 +17,13 @@ export const useCommunityAdmin = () => {
     if (!profile?.id) return false;
 
     try {
-      // Using RPC function to check admin status
       const { data, error } = await supabase
-        .rpc('is_community_admin', { 
-          community_uuid: communityId, 
-          user_uuid: profile.id 
-        });
+        .from('community_members')
+        .select('*')
+        .eq('community_id', communityId)
+        .eq('member_id', profile.id)
+        .eq('role', 'admin')
+        .single();
 
       if (error) {
         console.error('Error checking community admin status:', error);
@@ -42,17 +43,17 @@ export const useCommunityAdmin = () => {
 
     try {
       const { data, error } = await supabase
-        .rpc('is_community_creator', {
-          community_uuid: communityId,
-          user_uuid: profile.id
-        });
+        .from('communities')
+        .select('creator_id')
+        .eq('id', communityId)
+        .single();
 
       if (error) {
         console.error('Error checking community creator status:', error);
         return false;
       }
 
-      return !!data;
+      return data.creator_id === profile.id;
     } catch (err) {
       console.error('Failed to check community creator status:', err);
       return false;
@@ -124,17 +125,95 @@ export const useCommunityAdmin = () => {
   const addCommunityAdmin = useMutation({
     mutationFn: async ({ communityId, userId }: { communityId: string, userId: string }) => {
       try {
-        const { data, error } = await supabase
-          .rpc('add_community_admin', {
-            community_uuid: communityId,
-            user_uuid: userId
-          });
+        // Check if requester has permission (is an admin)
+        if (!profile?.id) {
+          return {
+            success: false,
+            error: 'not_authenticated',
+            message: 'You must be logged in to perform this action'
+          } as AdminManagementResult;
+        }
+
+        const { data: requesterAdmin } = await supabase
+          .from('community_members')
+          .select('*')
+          .eq('community_id', communityId)
+          .eq('member_id', profile.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (!requesterAdmin) {
+          return {
+            success: false,
+            error: 'permission_denied',
+            message: 'You do not have permission to add admins'
+          } as AdminManagementResult;
+        }
+
+        // Check if the user is already a member
+        const { data: existingMember } = await supabase
+          .from('community_members')
+          .select('*')
+          .eq('community_id', communityId)
+          .eq('member_id', userId)
+          .single();
+
+        if (!existingMember) {
+          // Add as member first with member role
+          await supabase
+            .from('community_members')
+            .insert({
+              community_id: communityId,
+              member_id: userId,
+              role: 'member'
+            });
+        } else if (existingMember.role === 'admin') {
+          return {
+            success: false,
+            error: 'already_admin',
+            message: 'User is already an admin'
+          } as AdminManagementResult;
+        }
+
+        // Count current admins
+        const { count } = await supabase
+          .from('community_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('community_id', communityId)
+          .eq('role', 'admin');
+
+        // Get max admins from communities table
+        const { data: community } = await supabase
+          .from('communities')
+          .select('max_admins')
+          .eq('id', communityId)
+          .single();
+
+        const maxAdmins = community?.max_admins || 4;
+
+        if (count && count >= maxAdmins) {
+          return {
+            success: false,
+            error: 'max_admins_reached',
+            message: `Maximum number of admins (${maxAdmins}) reached`
+          } as AdminManagementResult;
+        }
+
+        // Update to admin role
+        const { error } = await supabase
+          .from('community_members')
+          .update({ role: 'admin' })
+          .eq('community_id', communityId)
+          .eq('member_id', userId);
 
         if (error) {
           throw new Error(error.message);
         }
 
-        return data as AdminManagementResult;
+        return {
+          success: true,
+          message: 'Admin added successfully'
+        } as AdminManagementResult;
       } catch (err) {
         console.error('Failed to add admin:', err);
         throw err;
@@ -160,17 +239,78 @@ export const useCommunityAdmin = () => {
   const removeCommunityAdmin = useMutation({
     mutationFn: async ({ communityId, userId }: { communityId: string, userId: string }) => {
       try {
-        const { data, error } = await supabase
-          .rpc('remove_community_admin', {
-            community_uuid: communityId,
-            user_uuid: userId
-          });
+        // Check if requester has permission (is an admin)
+        if (!profile?.id) {
+          return {
+            success: false,
+            error: 'not_authenticated',
+            message: 'You must be logged in to perform this action'
+          } as AdminManagementResult;
+        }
+
+        const { data: requesterAdmin } = await supabase
+          .from('community_members')
+          .select('*')
+          .eq('community_id', communityId)
+          .eq('member_id', profile.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (!requesterAdmin) {
+          return {
+            success: false,
+            error: 'permission_denied',
+            message: 'You do not have permission to remove admins'
+          } as AdminManagementResult;
+        }
+
+        // Check if user is the community creator
+        const { data: community } = await supabase
+          .from('communities')
+          .select('creator_id')
+          .eq('id', communityId)
+          .single();
+
+        if (community && community.creator_id === userId) {
+          return {
+            success: false,
+            error: 'creator_removal',
+            message: 'Cannot remove the community creator. Transfer ownership first.'
+          } as AdminManagementResult;
+        }
+
+        // Count current admins
+        const { count } = await supabase
+          .from('community_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('community_id', communityId)
+          .eq('role', 'admin');
+
+        // Don't allow removing the last admin
+        if (count && count <= 1) {
+          return {
+            success: false,
+            error: 'last_admin',
+            message: 'Cannot remove the last admin'
+          } as AdminManagementResult;
+        }
+
+        // Downgrade to regular member
+        const { error } = await supabase
+          .from('community_members')
+          .update({ role: 'member' })
+          .eq('community_id', communityId)
+          .eq('member_id', userId)
+          .eq('role', 'admin');
 
         if (error) {
           throw new Error(error.message);
         }
 
-        return data as AdminManagementResult;
+        return {
+          success: true,
+          message: 'Admin removed successfully'
+        } as AdminManagementResult;
       } catch (err) {
         console.error('Failed to remove admin:', err);
         throw err;
@@ -206,19 +346,38 @@ export const useCommunityAdmin = () => {
       }
 
       try {
-        const { data, error } = await supabase
-          .rpc('transfer_community_ownership', {
-            community_uuid: communityId,
-            old_owner_uuid: profile.id,
-            new_owner_uuid: newOwnerId
-          });
+        // Check if the current user is the creator
+        const { data: community } = await supabase
+          .from('communities')
+          .select('creator_id')
+          .eq('id', communityId)
+          .single();
+
+        if (!community || community.creator_id !== profile.id) {
+          throw new Error('Only the creator can transfer ownership');
+        }
+
+        // Check if new owner is already an admin
+        const { data: isAdmin } = await supabase
+          .from('community_members')
+          .select('*')
+          .eq('community_id', communityId)
+          .eq('member_id', newOwnerId)
+          .eq('role', 'admin')
+          .single();
+
+        if (!isAdmin) {
+          throw new Error('New owner must be an admin first');
+        }
+
+        // Transfer ownership
+        const { error } = await supabase
+          .from('communities')
+          .update({ creator_id: newOwnerId })
+          .eq('id', communityId);
 
         if (error) {
           throw new Error(error.message);
-        }
-
-        if (!data) {
-          throw new Error('Ownership transfer failed. Make sure the user is an admin.');
         }
 
         return true;
@@ -242,15 +401,42 @@ export const useCommunityAdmin = () => {
   // Get community members
   const getCommunityMembers = async (communityId: string) => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_community_members', { community_uuid: communityId });
+      const { data: members, error: membersError } = await supabase
+        .from('community_members')
+        .select('member_id, role, joined_at')
+        .eq('community_id', communityId);
 
-      if (error) {
-        console.error('Error fetching community members:', error);
+      if (membersError) {
+        console.error('Error fetching community members:', membersError);
         return [];
       }
 
-      return data || [];
+      // Get profiles for all members
+      const memberIds = members.map(m => m.member_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .in('id', memberIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return [];
+      }
+
+      // Combine data into the expected format
+      const memberWithProfiles = members.map(member => {
+        const profile = profiles?.find(p => p.id === member.member_id);
+        
+        return {
+          member_id: member.member_id,
+          joined_at: member.joined_at,
+          role: member.role,
+          display_name: profile?.display_name || 'Unknown User',
+          avatar_url: profile?.avatar_url
+        };
+      });
+
+      return memberWithProfiles;
     } catch (err) {
       console.error('Failed to fetch community members:', err);
       return [];

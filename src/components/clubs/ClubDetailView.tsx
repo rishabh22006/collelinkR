@@ -144,7 +144,13 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
     refetchStatus();
   };
   
-  // Dummy club data for now
+  // Default events if clubDetails doesn't have them
+  const defaultEvents = [
+    { id: '1', title: 'Photo Walk', date: '2023-06-15', attendees: 24 },
+    { id: '2', title: 'Portrait Workshop', date: '2023-07-10', attendees: 18 },
+  ];
+  
+  // Dummy club data for now or use fetched data
   const club = clubDetails || {
     id: clubId,
     name: 'Photography Club',
@@ -153,10 +159,7 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
     is_verified: true,
     banner_url: 'https://images.unsplash.com/photo-1506241537529-eefea1fbe44d',
     logo_url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32',
-    events: [
-      { id: '1', title: 'Photo Walk', date: '2023-06-15', attendees: 24 },
-      { id: '2', title: 'Portrait Workshop', date: '2023-07-10', attendees: 18 },
-    ]
+    events: defaultEvents
   };
   
   if (!isOpen) return null;
@@ -227,7 +230,7 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
           
           <div className="mt-2 flex items-center text-muted-foreground">
             <Users className="h-4 w-4 mr-1" />
-            <span>{club.members_count || 0} members</span>
+            <span>{clubDetails?.members_count || club.member_count || 0} members</span>
             
             {isAdmin && (
               <Badge variant="outline" className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-200">
@@ -257,11 +260,11 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
             Upcoming Events
           </h3>
           
-          {(!club.events || club.events.length === 0) ? (
+          {(!(clubDetails?.events || club.events) || (clubDetails?.events || club.events)?.length === 0) ? (
             <p className="text-muted-foreground text-center py-6">No upcoming events</p>
           ) : (
             <div className="space-y-3">
-              {club.events.map(event => (
+              {(clubDetails?.events || club.events)?.map(event => (
                 <motion.div 
                   key={event.id}
                   whileHover={{ scale: 1.01 }}
@@ -309,7 +312,7 @@ const ClubDetailView = ({ clubId, isOpen, onClose, onJoinToggle, isJoined }: Clu
           <h3 className="font-medium mb-3">Club Members</h3>
           
           <p className="text-muted-foreground">
-            This club has {club.members_count || 0} members in total.
+            This club has {clubDetails?.members_count || club.member_count || 0} members in total.
           </p>
           
           <div className="space-y-2 mt-4">

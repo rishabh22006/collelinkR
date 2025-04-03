@@ -19,10 +19,11 @@ export const useClubAdmin = () => {
     try {
       // Using RPC function to check admin status
       const { data, error } = await supabase
-        .rpc('is_club_admin', { 
-          club_uuid: clubId, 
-          user_uuid: profile.id 
-        });
+        .from('club_admins')
+        .select('*')
+        .eq('club_id', clubId)
+        .eq('user_id', profile.id)
+        .single();
 
       if (error) {
         console.error('Error checking club admin status:', error);
@@ -42,17 +43,17 @@ export const useClubAdmin = () => {
 
     try {
       const { data, error } = await supabase
-        .rpc('is_club_creator', {
-          club_uuid: clubId,
-          user_uuid: profile.id
-        });
+        .from('clubs')
+        .select('creator_id')
+        .eq('id', clubId)
+        .single();
 
       if (error) {
         console.error('Error checking club creator status:', error);
         return false;
       }
 
-      return !!data;
+      return data.creator_id === profile.id;
     } catch (err) {
       console.error('Failed to check club creator status:', err);
       return false;
@@ -73,22 +74,49 @@ export const useClubAdmin = () => {
       }
 
       try {
-        // Use RPC function to create club and manage all related tasks
-        const { data, error } = await supabase
-          .rpc('create_club', { 
-            club_name: clubData.name,
-            club_description: clubData.description || null,
-            club_institution: clubData.institution || null, 
-            club_logo_url: clubData.logo_url || null,
-            club_banner_url: clubData.banner_url || null,
+        // Create the club
+        const { data: clubData, error: clubError } = await supabase
+          .from('clubs')
+          .insert({
+            name: clubData.name,
+            description: clubData.description || null,
+            institution: clubData.institution || null,
+            logo_url: clubData.logo_url || null,
+            banner_url: clubData.banner_url || null,
             creator_id: profile.id
-          });
+          })
+          .select()
+          .single();
 
-        if (error) {
-          throw error;
+        if (clubError) {
+          throw clubError;
         }
 
-        return data as Club;
+        // Make creator an admin
+        const { error: adminError } = await supabase
+          .from('club_admins')
+          .insert({
+            club_id: clubData.id,
+            user_id: profile.id
+          });
+
+        if (adminError) {
+          throw adminError;
+        }
+
+        // Also make creator a member
+        const { error: memberError } = await supabase
+          .from('club_members')
+          .insert({
+            club_id: clubData.id,
+            user_id: profile.id
+          });
+
+        if (memberError) {
+          throw memberError;
+        }
+
+        return clubData as Club;
       } catch (err) {
         console.error('Failed to create club:', err);
         throw err;
@@ -109,17 +137,55 @@ export const useClubAdmin = () => {
   const addClubAdmin = useMutation({
     mutationFn: async ({ clubId, userId }: { clubId: string, userId: string }) => {
       try {
-        const { data, error } = await supabase
-          .rpc('add_club_admin', {
-            club_uuid: clubId,
-            user_uuid: userId
+        // Check if the user is already an admin
+        const { data: existingAdmin, error: checkError } = await supabase
+          .from('club_admins')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('user_id', userId)
+          .single();
+
+        if (existingAdmin) {
+          return {
+            success: false,
+            error: 'already_admin',
+            message: 'User is already an admin'
+          } as AdminManagementResult;
+        }
+
+        // Add as admin
+        const { error } = await supabase
+          .from('club_admins')
+          .insert({
+            club_id: clubId,
+            user_id: userId
           });
 
         if (error) {
           throw new Error(error.message);
         }
 
-        return data as AdminManagementResult;
+        // Also ensure user is a member
+        const { data: existingMember } = await supabase
+          .from('club_members')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('user_id', userId)
+          .single();
+
+        if (!existingMember) {
+          await supabase
+            .from('club_members')
+            .insert({
+              club_id: clubId,
+              user_id: userId
+            });
+        }
+
+        return {
+          success: true,
+          message: 'Admin added successfully'
+        } as AdminManagementResult;
       } catch (err) {
         console.error('Failed to add admin:', err);
         throw err;
@@ -145,17 +211,51 @@ export const useClubAdmin = () => {
   const removeClubAdmin = useMutation({
     mutationFn: async ({ clubId, userId }: { clubId: string, userId: string }) => {
       try {
-        const { data, error } = await supabase
-          .rpc('remove_club_admin', {
-            club_uuid: clubId,
-            user_uuid: userId
-          });
+        // Check if this is the creator trying to remove themselves
+        const { data: club } = await supabase
+          .from('clubs')
+          .select('creator_id')
+          .eq('id', clubId)
+          .single();
+
+        if (club && club.creator_id === userId) {
+          return {
+            success: false,
+            error: 'creator_removal',
+            message: 'Cannot remove the club creator. Transfer ownership first.'
+          } as AdminManagementResult;
+        }
+
+        // Count current admins
+        const { count } = await supabase
+          .from('club_admins')
+          .select('*', { count: 'exact', head: true })
+          .eq('club_id', clubId);
+
+        // Don't allow removing the last admin
+        if (count && count <= 1) {
+          return {
+            success: false,
+            error: 'last_admin',
+            message: 'Cannot remove the last admin'
+          } as AdminManagementResult;
+        }
+
+        // Remove admin
+        const { error } = await supabase
+          .from('club_admins')
+          .delete()
+          .eq('club_id', clubId)
+          .eq('user_id', userId);
 
         if (error) {
           throw new Error(error.message);
         }
 
-        return data as AdminManagementResult;
+        return {
+          success: true,
+          message: 'Admin removed successfully'
+        } as AdminManagementResult;
       } catch (err) {
         console.error('Failed to remove admin:', err);
         throw err;
@@ -191,19 +291,37 @@ export const useClubAdmin = () => {
       }
 
       try {
-        const { data, error } = await supabase
-          .rpc('transfer_club_ownership', {
-            club_uuid: clubId,
-            old_owner_uuid: profile.id,
-            new_owner_uuid: newOwnerId
-          });
+        // Check if the current user is the creator
+        const { data: club } = await supabase
+          .from('clubs')
+          .select('creator_id')
+          .eq('id', clubId)
+          .single();
+
+        if (!club || club.creator_id !== profile.id) {
+          throw new Error('Only the creator can transfer ownership');
+        }
+
+        // Check if new owner is already an admin
+        const { data: isAdmin } = await supabase
+          .from('club_admins')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('user_id', newOwnerId)
+          .single();
+
+        if (!isAdmin) {
+          throw new Error('New owner must be an admin first');
+        }
+
+        // Transfer ownership
+        const { error } = await supabase
+          .from('clubs')
+          .update({ creator_id: newOwnerId })
+          .eq('id', clubId);
 
         if (error) {
           throw new Error(error.message);
-        }
-
-        if (!data) {
-          throw new Error('Ownership transfer failed. Make sure the user is an admin.');
         }
 
         return true;
@@ -227,15 +345,54 @@ export const useClubAdmin = () => {
   // Get club members with admin status
   const getClubMembers = async (clubId: string) => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_club_members', { club_uuid: clubId });
+      const { data: members, error: membersError } = await supabase
+        .from('club_members')
+        .select('user_id, joined_at')
+        .eq('club_id', clubId);
 
-      if (error) {
-        console.error('Error fetching club members:', error);
+      if (membersError) {
+        console.error('Error fetching club members:', membersError);
         return [];
       }
 
-      return data || [];
+      // Get admin status for each member
+      const { data: admins, error: adminsError } = await supabase
+        .from('club_admins')
+        .select('user_id')
+        .eq('club_id', clubId);
+
+      if (adminsError) {
+        console.error('Error fetching club admins:', adminsError);
+        return [];
+      }
+
+      // Get profiles for all members
+      const memberIds = members.map(m => m.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .in('id', memberIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return [];
+      }
+
+      // Combine data into the expected format
+      const memberWithProfiles = members.map(member => {
+        const profile = profiles?.find(p => p.id === member.user_id);
+        const isAdmin = admins?.some(a => a.user_id === member.user_id) || false;
+        
+        return {
+          user_id: member.user_id,
+          joined_at: member.joined_at,
+          is_admin: isAdmin,
+          display_name: profile?.display_name || 'Unknown User',
+          avatar_url: profile?.avatar_url
+        };
+      });
+
+      return memberWithProfiles;
     } catch (err) {
       console.error('Failed to fetch club members:', err);
       return [];

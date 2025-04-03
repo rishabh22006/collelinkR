@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
+import { ClubMembershipStatus } from './useClubTypes';
 
 /**
  * Hook for community membership functionality
@@ -11,14 +12,14 @@ export const useCommunityMembership = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
 
-  // Get membership status (is member and is admin)
-  const getCommunityMembershipStatus = async (communityId: string) => {
+  // Get membership status
+  const getCommunityMembershipStatus = async (communityId: string): Promise<ClubMembershipStatus> => {
     if (!profile?.id) {
       return { isMember: false, isAdmin: false, isCreator: false };
     }
 
     try {
-      // Check if user is a member
+      // Check if user is a member and their role
       const { data: memberData, error: memberError } = await supabase
         .from('community_members')
         .select('role')
@@ -26,30 +27,29 @@ export const useCommunityMembership = () => {
         .eq('member_id', profile.id)
         .single();
 
-      if (memberError && memberError.code !== 'PGRST116') { // Not found error
+      if (memberError && memberError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
         console.error('Error checking community membership:', memberError);
-        return { isMember: false, isAdmin: false, isCreator: false };
+      }
+
+      // Check if user is the creator
+      const { data: communityData, error: creatorError } = await supabase
+        .from('communities')
+        .select('creator_id')
+        .eq('id', communityId)
+        .single();
+
+      if (creatorError) {
+        console.error('Error checking community creator status:', creatorError);
       }
 
       const isMember = !!memberData;
       const isAdmin = memberData?.role === 'admin';
-
-      // Check if user is the creator
-      const { data: isCreator, error: creatorError } = await supabase
-        .rpc('is_community_creator', { 
-          community_uuid: communityId, 
-          user_uuid: profile.id 
-        });
-
-      if (creatorError) {
-        console.error('Error checking community creator status:', creatorError);
-        return { isMember, isAdmin, isCreator: false };
-      }
+      const isCreator = communityData?.creator_id === profile.id;
 
       return { 
-        isMember, 
+        isMember,
         isAdmin,
-        isCreator: !!isCreator
+        isCreator
       };
     } catch (err) {
       console.error('Failed to check community membership status:', err);
@@ -65,6 +65,19 @@ export const useCommunityMembership = () => {
       }
 
       try {
+        // Check if already a member
+        const { data: existingMember } = await supabase
+          .from('community_members')
+          .select('*')
+          .eq('community_id', communityId)
+          .eq('member_id', profile.id)
+          .single();
+
+        if (existingMember) {
+          throw new Error('You are already a member of this community');
+        }
+
+        // Join community
         const { data, error } = await supabase
           .from('community_members')
           .insert({
@@ -72,13 +85,14 @@ export const useCommunityMembership = () => {
             member_id: profile.id,
             role: 'member'
           })
-          .select();
+          .select()
+          .single();
 
         if (error) {
           throw error;
         }
 
-        return data[0];
+        return data;
       } catch (err) {
         console.error('Failed to join community:', err);
         throw err;
@@ -87,7 +101,6 @@ export const useCommunityMembership = () => {
     onSuccess: () => {
       toast.success('Successfully joined the community');
       queryClient.invalidateQueries({ queryKey: ['communities'] });
-      queryClient.invalidateQueries({ queryKey: ['community-members'] });
     },
     onError: (error: Error) => {
       toast.error('Failed to join the community', {
@@ -103,33 +116,31 @@ export const useCommunityMembership = () => {
         throw new Error('You must be logged in to leave a community');
       }
 
-      // Check if user is the creator
-      const { data: isCreator, error: creatorError } = await supabase
-        .rpc('is_community_creator', { 
-          community_uuid: communityId, 
-          user_uuid: profile.id 
-        });
-
-      if (creatorError) {
-        throw creatorError;
-      }
-
-      if (isCreator) {
-        throw new Error('You cannot leave a community you created. Transfer ownership first.');
-      }
-
       try {
-        const { error } = await supabase
+        // Check if user is the creator
+        const { data: community } = await supabase
+          .from('communities')
+          .select('creator_id')
+          .eq('id', communityId)
+          .single();
+
+        if (community && community.creator_id === profile.id) {
+          throw new Error('As the creator, you cannot leave the community. Transfer ownership first.');
+        }
+
+        // Leave community (delete membership)
+        const { data, error } = await supabase
           .from('community_members')
           .delete()
           .eq('community_id', communityId)
-          .eq('member_id', profile.id);
+          .eq('member_id', profile.id)
+          .select();
 
         if (error) {
           throw error;
         }
 
-        return true;
+        return data;
       } catch (err) {
         console.error('Failed to leave community:', err);
         throw err;
@@ -138,7 +149,6 @@ export const useCommunityMembership = () => {
     onSuccess: () => {
       toast.success('Successfully left the community');
       queryClient.invalidateQueries({ queryKey: ['communities'] });
-      queryClient.invalidateQueries({ queryKey: ['community-members'] });
     },
     onError: (error: Error) => {
       toast.error('Failed to leave the community', {

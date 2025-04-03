@@ -20,45 +20,44 @@ export const useClubMembership = () => {
 
     try {
       // Check if user is a member
-      const { data: isMember, error: memberError } = await supabase
-        .rpc('is_club_member', { 
-          club_uuid: clubId, 
-          user_uuid: profile.id 
-        });
+      const { data: memberData, error: memberError } = await supabase
+        .from('club_members')
+        .select('*')
+        .eq('club_id', clubId)
+        .eq('user_id', profile.id)
+        .single();
 
-      if (memberError) {
+      if (memberError && memberError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
         console.error('Error checking club membership:', memberError);
-        return { isMember: false, isAdmin: false, isCreator: false };
       }
 
       // Check if user is an admin
-      const { data: isAdmin, error: adminError } = await supabase
-        .rpc('is_club_admin', { 
-          club_uuid: clubId, 
-          user_uuid: profile.id 
-        });
+      const { data: adminData, error: adminError } = await supabase
+        .from('club_admins')
+        .select('*')
+        .eq('club_id', clubId)
+        .eq('user_id', profile.id)
+        .single();
 
-      if (adminError) {
+      if (adminError && adminError.code !== 'PGRST116') {
         console.error('Error checking club admin status:', adminError);
-        return { isMember: !!isMember, isAdmin: false, isCreator: false };
       }
 
       // Check if user is the creator
-      const { data: isCreator, error: creatorError } = await supabase
-        .rpc('is_club_creator', { 
-          club_uuid: clubId, 
-          user_uuid: profile.id 
-        });
+      const { data: clubData, error: creatorError } = await supabase
+        .from('clubs')
+        .select('creator_id')
+        .eq('id', clubId)
+        .single();
 
       if (creatorError) {
         console.error('Error checking club creator status:', creatorError);
-        return { isMember: !!isMember, isAdmin: !!isAdmin, isCreator: false };
       }
 
       return { 
-        isMember: !!isMember, 
-        isAdmin: !!isAdmin,
-        isCreator: !!isCreator
+        isMember: !!memberData, 
+        isAdmin: !!adminData,
+        isCreator: clubData?.creator_id === profile.id
       };
     } catch (err) {
       console.error('Failed to check club membership status:', err);
@@ -74,11 +73,27 @@ export const useClubMembership = () => {
       }
 
       try {
+        // Check if already a member
+        const { data: existingMember } = await supabase
+          .from('club_members')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('user_id', profile.id)
+          .single();
+
+        if (existingMember) {
+          throw new Error('You are already a member of this club');
+        }
+
+        // Join club
         const { data, error } = await supabase
-          .rpc('join_club', { 
-            club_uuid: clubId, 
-            user_uuid: profile.id 
-          });
+          .from('club_members')
+          .insert({
+            club_id: clubId,
+            user_id: profile.id
+          })
+          .select()
+          .single();
 
         if (error) {
           throw error;
@@ -109,15 +124,35 @@ export const useClubMembership = () => {
       }
 
       try {
+        // Check if user is the creator
+        const { data: club } = await supabase
+          .from('clubs')
+          .select('creator_id')
+          .eq('id', clubId)
+          .single();
+
+        if (club && club.creator_id === profile.id) {
+          throw new Error('As the creator, you cannot leave the club. Transfer ownership first.');
+        }
+
+        // Leave club (delete membership)
         const { data, error } = await supabase
-          .rpc('leave_club', { 
-            club_uuid: clubId, 
-            user_uuid: profile.id 
-          });
+          .from('club_members')
+          .delete()
+          .eq('club_id', clubId)
+          .eq('user_id', profile.id)
+          .select();
 
         if (error) {
           throw error;
         }
+
+        // Also remove from admins if they were an admin
+        await supabase
+          .from('club_admins')
+          .delete()
+          .eq('club_id', clubId)
+          .eq('user_id', profile.id);
 
         return data;
       } catch (err) {

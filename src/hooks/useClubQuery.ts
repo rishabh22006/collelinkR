@@ -17,9 +17,9 @@ export const useClubQuery = () => {
     queryKey: ['clubs'],
     queryFn: async () => {
       try {
-        // We need to use raw SQL query since we don't have direct TS types for clubs
         const { data, error } = await supabase
-          .rpc('get_all_clubs')
+          .from('clubs')
+          .select('*')
           .order('name');
 
         if (error) {
@@ -44,7 +44,10 @@ export const useClubQuery = () => {
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .rpc('get_featured_clubs');
+          .from('clubs')
+          .select('*')
+          .eq('is_featured', true)
+          .order('name');
 
         if (error) {
           console.error('Error fetching featured clubs:', error);
@@ -62,20 +65,74 @@ export const useClubQuery = () => {
   // Get club by ID
   const getClub = async (clubId: string): Promise<ClubDetails | null> => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_club_details', { club_uuid: clubId });
+      // Get club details
+      const { data: clubData, error: clubError } = await supabase
+        .from('clubs')
+        .select('*')
+        .eq('id', clubId)
+        .single();
 
-      if (error) {
-        console.error('Error fetching club:', error);
+      if (clubError) {
+        console.error('Error fetching club:', clubError);
         return null;
       }
 
-      // The RPC function returns an array, but we need just the first element
-      if (Array.isArray(data) && data.length > 0) {
-        return data[0] as ClubDetails;
+      // Get member count
+      const { count: membersCount, error: countError } = await supabase
+        .from('club_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('club_id', clubId);
+
+      if (countError) {
+        console.error('Error counting members:', countError);
       }
+
+      // Get user's membership status if logged in
+      let isMember = false;
+      let isAdmin = false;
+      let isCreator = false;
+
+      const userId = (await supabase.auth.getUser()).data.user?.id;
       
-      return null;
+      if (userId) {
+        // Check if user is a member
+        const { data: memberData } = await supabase
+          .from('club_members')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('user_id', userId)
+          .single();
+
+        isMember = !!memberData;
+
+        // Check if user is an admin
+        const { data: adminData } = await supabase
+          .from('club_admins')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('user_id', userId)
+          .single();
+
+        isAdmin = !!adminData;
+
+        // Check if user is the creator
+        isCreator = clubData.creator_id === userId;
+      }
+
+      // Get upcoming events (placeholder for now)
+      const events = [
+        { id: '1', title: 'Photo Walk', date: '2023-06-15', attendees: 24 },
+        { id: '2', title: 'Portrait Workshop', date: '2023-07-10', attendees: 18 },
+      ];
+
+      return {
+        ...clubData,
+        members_count: membersCount || 0,
+        is_member: isMember,
+        is_admin: isAdmin,
+        is_creator: isCreator,
+        events
+      } as ClubDetails;
     } catch (err) {
       console.error('Failed to fetch club:', err);
       return null;

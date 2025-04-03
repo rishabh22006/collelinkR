@@ -3,6 +3,7 @@ import { useCommunityAdmin } from './useCommunityAdmin';
 import { useCommunityMembership } from './useCommunityMembership';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { CommunityDetails } from './useClubTypes';
 
 export const useCommunities = () => {
   // Combine admin and membership functionality
@@ -64,14 +65,12 @@ export const useCommunities = () => {
   };
 
   // Get community details
-  const getCommunity = async (communityId: string) => {
+  const getCommunity = async (communityId: string): Promise<CommunityDetails | null> => {
     try {
+      // Get community details
       const { data, error } = await supabase
         .from('communities')
-        .select(`
-          *,
-          members:community_members(count)
-        `)
+        .select('*')
         .eq('id', communityId)
         .single();
 
@@ -80,15 +79,23 @@ export const useCommunities = () => {
         return null;
       }
 
+      // Get member count
+      const { count: membersCount, error: countError } = await supabase
+        .from('community_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('community_id', communityId);
+
+      if (countError) {
+        console.error('Error counting members:', countError);
+      }
+
       // Process the data to add members_count
       const community = {
         ...data,
-        members_count: data.members?.[0]?.count || 0
+        members_count: membersCount || 0
       };
 
-      delete community.members; // Remove the raw members data
-
-      return community;
+      return community as CommunityDetails;
     } catch (err) {
       console.error('Failed to fetch community:', err);
       return null;
