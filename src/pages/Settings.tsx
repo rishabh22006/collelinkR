@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import TopNavbar from '@/components/layout/TopNavbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import {
   Bell,
   Moon,
@@ -30,13 +31,22 @@ import {
   Eye,
   EyeOff,
   Smartphone,
-  Mail
+  Mail,
+  Loader2
 } from 'lucide-react';
 
 const Settings = () => {
   const { profile, signOut } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('account');
+  
+  // Get user settings
+  const { 
+    settings, 
+    isLoading: isSettingsLoading, 
+    updateSettings,
+    updateNotificationSettings
+  } = useUserSettings();
   
   // Account settings
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
@@ -49,15 +59,51 @@ const Settings = () => {
   const [showActivity, setShowActivity] = useState(true);
   const [showInstitution, setShowInstitution] = useState(true);
   
-  // Notification settings
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [eventReminders, setEventReminders] = useState(true);
-  const [messageNotifications, setMessageNotifications] = useState(true);
+  // Notification settings from user settings
+  const [messageNotifications, setMessageNotifications] = useState(
+    settings?.notifications?.messages || true
+  );
+  const [eventNotifications, setEventNotifications] = useState(
+    settings?.notifications?.events || true
+  );
+  const [friendRequestNotifications, setFriendRequestNotifications] = useState(
+    settings?.notifications?.friendRequests || true
+  );
+  const [achievementNotifications, setAchievementNotifications] = useState(
+    settings?.notifications?.achievements || true
+  );
+  const [likeNotifications, setLikeNotifications] = useState(
+    settings?.notifications?.likes || true
+  );
+  const [systemUpdateNotifications, setSystemUpdateNotifications] = useState(
+    settings?.notifications?.systemUpdates || true
+  );
   
   // Display settings
-  const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
-  const [language, setLanguage] = useState('English');
+  const [darkMode, setDarkMode] = useState(
+    settings?.theme === 'dark' || 
+    (settings?.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ||
+    document.documentElement.classList.contains('dark')
+  );
+  const [language, setLanguage] = useState(settings?.language || 'en');
+
+  // Update local state when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setMessageNotifications(settings.notifications.messages);
+      setEventNotifications(settings.notifications.events);
+      setFriendRequestNotifications(settings.notifications.friendRequests);
+      setAchievementNotifications(settings.notifications.achievements);
+      setLikeNotifications(settings.notifications.likes);
+      setSystemUpdateNotifications(settings.notifications.systemUpdates);
+      
+      const isDark = settings.theme === 'dark' || 
+        (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      setDarkMode(isDark);
+      
+      setLanguage(settings.language);
+    }
+  }, [settings]);
   
   const handleUpdateProfile = async () => {
     if (!profile) return;
@@ -89,7 +135,7 @@ const Settings = () => {
     try {
       if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         await signOut();
-        toast.success('Your account has been deleted');
+        toast.success('Your account has been logged out');
         navigate('/');
       }
     } catch (error) {
@@ -102,6 +148,7 @@ const Settings = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
     
+    // Update theme in document
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -109,7 +156,48 @@ const Settings = () => {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
+    
+    // Update settings in database
+    updateSettings.mutate({
+      theme: newDarkMode ? 'dark' : 'light'
+    });
   };
+  
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLanguage = e.target.value;
+    setLanguage(newLanguage);
+    
+    // Update settings in database
+    updateSettings.mutate({
+      language: newLanguage
+    });
+  };
+  
+  const handleUpdateNotifications = () => {
+    updateNotificationSettings.mutate({
+      messages: messageNotifications,
+      events: eventNotifications,
+      friendRequests: friendRequestNotifications,
+      achievements: achievementNotifications,
+      likes: likeNotifications,
+      systemUpdates: systemUpdateNotifications
+    });
+  };
+  
+  const handlePrivacySettings = () => {
+    toast.success('Privacy settings updated');
+  };
+  
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="mb-4">Please log in to view settings</p>
+          <Button onClick={() => navigate('/auth')}>Log In</Button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen pb-20">
@@ -123,6 +211,12 @@ const Settings = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold">Settings</h1>
+            {isSettingsLoading && (
+              <div className="flex items-center">
+                <Loader2 className="animate-spin mr-2" size={16} />
+                <span className="text-sm text-muted-foreground">Loading settings...</span>
+              </div>
+            )}
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -213,8 +307,17 @@ const Settings = () => {
                 </CardContent>
                 <CardFooter className="justify-between">
                   <Button onClick={handleUpdateProfile} disabled={isUpdating}>
-                    <Save size={16} className="mr-2" />
-                    Save Changes
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} className="mr-2" />
+                        Save Changes
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -331,7 +434,7 @@ const Settings = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button>
+                  <Button onClick={handlePrivacySettings}>
                     <Shield size={16} className="mr-2" />
                     Save Privacy Settings
                   </Button>
@@ -352,56 +455,8 @@ const Settings = () => {
                     <div className="space-y-0.5">
                       <Label className="flex items-center gap-2">
                         <Mail size={16} />
-                        Email Notifications
+                        Message Notifications
                       </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receive important updates via email.
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={emailNotifications}
-                      onCheckedChange={setEmailNotifications}
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="flex items-center gap-2">
-                        <Smartphone size={16} />
-                        Push Notifications
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receive notifications on your device.
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={pushNotifications}
-                      onCheckedChange={setPushNotifications}
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Event Reminders</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Get reminded about upcoming events.
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={eventReminders}
-                      onCheckedChange={setEventReminders}
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Message Notifications</Label>
                       <p className="text-sm text-muted-foreground">
                         Be notified when you receive messages.
                       </p>
@@ -411,11 +466,96 @@ const Settings = () => {
                       onCheckedChange={setMessageNotifications}
                     />
                   </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Event Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Get reminded about upcoming events.
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={eventNotifications}
+                      onCheckedChange={setEventNotifications}
+                    />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Friend Request Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Be notified about new friend requests.
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={friendRequestNotifications}
+                      onCheckedChange={setFriendRequestNotifications}
+                    />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Achievement Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Be notified about new achievements.
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={achievementNotifications}
+                      onCheckedChange={setAchievementNotifications}
+                    />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Like Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Be notified when someone likes your content.
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={likeNotifications}
+                      onCheckedChange={setLikeNotifications}
+                    />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>System Update Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Be notified about system updates.
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={systemUpdateNotifications}
+                      onCheckedChange={setSystemUpdateNotifications}
+                    />
+                  </div>
                 </CardContent>
                 <CardFooter>
-                  <Button>
-                    <Bell size={16} className="mr-2" />
-                    Save Notification Settings
+                  <Button onClick={handleUpdateNotifications} 
+                    disabled={updateNotificationSettings.isPending}>
+                    {updateNotificationSettings.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Bell size={16} className="mr-2" />
+                        Save Notification Settings
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -443,6 +583,7 @@ const Settings = () => {
                     <Switch 
                       checked={darkMode}
                       onCheckedChange={handleToggleDarkMode}
+                      disabled={updateSettings.isPending}
                     />
                   </div>
                   
@@ -456,22 +597,17 @@ const Settings = () => {
                     <select 
                       className="w-full h-10 px-3 rounded-md border border-input bg-background"
                       value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
+                      onChange={handleLanguageChange}
+                      disabled={updateSettings.isPending}
                     >
-                      <option value="English">English</option>
-                      <option value="Spanish">Spanish</option>
-                      <option value="French">French</option>
-                      <option value="German">German</option>
-                      <option value="Chinese">Chinese</option>
+                      <option value="en">English</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="zh">Chinese</option>
                     </select>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button>
-                    <Save size={16} className="mr-2" />
-                    Save Display Settings
-                  </Button>
-                </CardFooter>
               </Card>
             </TabsContent>
           </Tabs>
