@@ -10,7 +10,7 @@ export function useTheme() {
     // Check if user prefers dark mode
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    return savedTheme || (prefersDark ? 'dark' : 'light');
+    return (savedTheme || (prefersDark ? 'dark' : 'light'));
   });
 
   useEffect(() => {
@@ -20,8 +20,13 @@ export function useTheme() {
     // Update document class
     const root = window.document.documentElement;
     
-    root.classList.remove('dark', 'light');
-    root.classList.add(theme);
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
   }, [theme]);
 
   return { theme, setTheme };

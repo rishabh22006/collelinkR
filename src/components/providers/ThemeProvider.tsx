@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 
 type ThemeContextType = {
@@ -11,6 +11,19 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
+  
+  // Apply theme class on initial render
+  useEffect(() => {
+    const root = window.document.documentElement;
+    
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+  }, []);
   
   const value = useMemo(() => ({
     theme,

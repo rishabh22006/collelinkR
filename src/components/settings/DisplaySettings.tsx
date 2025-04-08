@@ -6,17 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Moon, Sun, Languages } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { toast } from 'sonner';
+import { useThemeContext } from '@/components/providers/ThemeProvider';
 
 const DisplaySettings: React.FC = () => {
   const { settings, updateSettings } = useUserSettings();
+  const { theme, setTheme } = useThemeContext();
   
   const [darkMode, setDarkMode] = React.useState(() => {
-    // Default to system preference if no settings
-    if (!settings) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return settings.theme === 'dark' || 
-      (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return theme === 'dark';
   });
   
   const [language, setLanguage] = React.useState(settings?.language || 'en');
@@ -24,29 +22,32 @@ const DisplaySettings: React.FC = () => {
   // Update local state when settings are loaded
   useEffect(() => {
     if (settings) {
-      const isDark = settings.theme === 'dark' || 
-        (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      setDarkMode(isDark);
+      setDarkMode(theme === 'dark');
       setLanguage(settings.language);
     }
-  }, [settings]);
+  }, [settings, theme]);
 
   const handleToggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
     
-    // Update theme in document
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    // Update theme using the theme provider
+    const newTheme = newDarkMode ? 'dark' : 'light';
+    setTheme(newTheme);
     
     // Update settings in database
     updateSettings.mutate({
-      theme: newDarkMode ? 'dark' : 'light'
+      theme: newTheme
+    }, {
+      onSuccess: () => {
+        toast.success('Theme updated successfully');
+      },
+      onError: () => {
+        // Revert UI on error
+        setDarkMode(!newDarkMode);
+        setTheme(theme);
+        toast.error('Failed to update theme');
+      }
     });
   };
   
@@ -57,6 +58,15 @@ const DisplaySettings: React.FC = () => {
     // Update settings in database
     updateSettings.mutate({
       language: newLanguage
+    }, {
+      onSuccess: () => {
+        toast.success('Language preference updated');
+      },
+      onError: () => {
+        // Revert UI on error
+        setLanguage(language);
+        toast.error('Failed to update language preference');
+      }
     });
   };
   

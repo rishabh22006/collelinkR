@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Shield } from 'lucide-react';
+import { Shield, Save } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
@@ -12,10 +12,17 @@ const PrivacySettings: React.FC = () => {
   const [showEmail, setShowEmail] = useState(true);
   const [showActivity, setShowActivity] = useState(true);
   const [showInstitution, setShowInstitution] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
   const handlePrivacySettings = () => {
-    // In a real app, this would update privacy settings in the database
-    toast.success('Privacy settings updated');
+    setIsSaving(true);
+    
+    // Simulate API call with setTimeout
+    setTimeout(() => {
+      // In a real app, this would update privacy settings in the database
+      toast.success('Privacy settings updated');
+      setIsSaving(false);
+    }, 800);
   };
   
   return (
@@ -37,6 +44,7 @@ const PrivacySettings: React.FC = () => {
           <Switch 
             checked={showEmail}
             onCheckedChange={setShowEmail}
+            disabled={isSaving}
           />
         </div>
         
@@ -52,6 +60,7 @@ const PrivacySettings: React.FC = () => {
           <Switch 
             checked={showActivity}
             onCheckedChange={setShowActivity}
+            disabled={isSaving}
           />
         </div>
         
@@ -67,13 +76,23 @@ const PrivacySettings: React.FC = () => {
           <Switch 
             checked={showInstitution}
             onCheckedChange={setShowInstitution}
+            disabled={isSaving}
           />
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handlePrivacySettings}>
-          <Shield size={16} className="mr-2" />
-          Save Privacy Settings
+        <Button onClick={handlePrivacySettings} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Save size={16} className="mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Shield size={16} className="mr-2" />
+              Save Privacy Settings
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

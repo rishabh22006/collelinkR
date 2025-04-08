@@ -100,10 +100,13 @@ export const useUserSettings = () => {
   const createDefaultSettings = async () => {
     if (!profile) throw new Error('User not authenticated');
     
+    // Get theme from localStorage if available
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' || 'system';
+    
     // Need to convert the notifications object to JSON for Supabase
     const newSettings = {
       user_id: profile.id,
-      theme: defaultSettings.theme,
+      theme: savedTheme,
       language: defaultSettings.language,
       notifications: defaultSettings.notifications as any // Type cast to any for Supabase
     };
@@ -126,7 +129,11 @@ export const useUserSettings = () => {
 
       // Only send fields we're allowed to update to the database
       const dataToUpdate: any = {};
-      if (updatedSettings.theme) dataToUpdate.theme = updatedSettings.theme;
+      if (updatedSettings.theme) {
+        dataToUpdate.theme = updatedSettings.theme;
+        // Also update localStorage
+        localStorage.setItem('theme', updatedSettings.theme);
+      }
       if (updatedSettings.language) dataToUpdate.language = updatedSettings.language;
       if (updatedSettings.notifications) dataToUpdate.notifications = updatedSettings.notifications;
 
@@ -142,7 +149,6 @@ export const useUserSettings = () => {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['user-settings'], data);
-      toast.success('Settings updated successfully');
     },
     onError: (error: Error) => {
       toast.error('Failed to update settings', {
