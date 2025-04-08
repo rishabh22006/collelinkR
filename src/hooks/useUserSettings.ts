@@ -100,11 +100,12 @@ export const useUserSettings = () => {
   const createDefaultSettings = async () => {
     if (!profile) throw new Error('User not authenticated');
     
+    // Need to convert the notifications object to JSON for Supabase
     const newSettings = {
       user_id: profile.id,
       theme: defaultSettings.theme,
       language: defaultSettings.language,
-      notifications: defaultSettings.notifications
+      notifications: defaultSettings.notifications as any // Type cast to any for Supabase
     };
     
     const { data, error } = await supabase
@@ -164,7 +165,7 @@ export const useUserSettings = () => {
       const { data, error } = await supabase
         .from('user_settings')
         .update({
-          notifications: updatedNotifications
+          notifications: updatedNotifications as any // Type cast for Supabase
         })
         .eq('id', settings.id)
         .select()
