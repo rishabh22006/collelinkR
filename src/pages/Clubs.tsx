@@ -1,22 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import TopNavbar from '@/components/layout/TopNavbar';
-import { Search, ArrowLeft, Users, UserCheck, Star, X } from 'lucide-react';
+import { ArrowLeft, Users, UserCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getDefaultCategory } from '@/utils/dataUtils';
 
 // Import refactored components
-import FeaturedClubCard from '@/components/clubs/FeaturedClubCard';
-import ClubCard from '@/components/clubs/ClubCard';
-import CommunityCard from '@/components/clubs/CommunityCard';
-import RegisterClubCard from '@/components/clubs/RegisterClubCard';
-import CreateCommunityCard from '@/components/clubs/CreateCommunityCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import ClubsFilter from '@/components/clubs/ClubsFilter';
+import FeaturedSection from '@/components/clubs/FeaturedSection';
+import ClubsTabContent from '@/components/clubs/ClubsTabContent';
+import CommunitiesTabContent from '@/components/clubs/CommunitiesTabContent';
 
 // Define extended types to include all possible properties
 interface ExtendedClub {
@@ -76,7 +75,7 @@ const Clubs = () => {
       // Add derived properties for compatibility
       return (data || []).map(club => ({
         ...club,
-        category: 'General' // Default category for all clubs
+        category: getDefaultCategory() // Default category for all clubs
       })) as ExtendedClub[];
     }
   });
@@ -231,75 +230,25 @@ const Clubs = () => {
           <h1 className="text-xl font-semibold text-foreground">Clubs & Communities</h1>
         </div>
         
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-          <Input
-            placeholder="Search clubs and communities..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Category Filter UI */}
-        {allCategories.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-medium text-foreground">Filter by category:</h2>
-              {activeFilters.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearFilters}
-                  className="h-7 px-2 text-xs"
-                >
-                  <X size={14} className="mr-1" />
-                  Clear filters
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {allCategories.map(category => (
-                <Badge
-                  key={category}
-                  variant={activeFilters.includes(category) ? "default" : "outline"}
-                  className="cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => toggleFilter(category)}
-                >
-                  {category}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+        <ClubsFilter 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          categories={allCategories}
+          activeFilters={activeFilters}
+          toggleFilter={toggleFilter}
+          clearFilters={clearFilters}
+        />
 
         {/* Featured Clubs Section */}
-        {(featuredClubs.length > 0 || featuredCommunities.length > 0) && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
-              <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-              Featured
-            </h2>
-            <motion.div 
-              className="space-y-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {activeTab === "clubs" && featuredClubs.map((club) => (
-                <motion.div key={club.id} variants={itemVariants}>
-                  <FeaturedClubCard club={transformClubForFeatured(club)} />
-                </motion.div>
-              ))}
-              
-              {activeTab === "communities" && featuredCommunities.map((community) => (
-                <motion.div key={community.id} variants={itemVariants}>
-                  <FeaturedClubCard club={transformCommunityForFeatured(community)} />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        )}
+        <FeaturedSection 
+          activeTab={activeTab}
+          featuredClubs={featuredClubs}
+          featuredCommunities={featuredCommunities}
+          containerVariants={containerVariants}
+          itemVariants={itemVariants}
+          transformClubForFeatured={transformClubForFeatured}
+          transformCommunityForFeatured={transformCommunityForFeatured}
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList className="grid w-full grid-cols-2">
@@ -314,83 +263,23 @@ const Clubs = () => {
           </TabsList>
           
           <TabsContent value="clubs">
-            {isLoadingClubs ? (
-              <motion.div 
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {renderSkeletons(7)}
-              </motion.div>
-            ) : (
-              <motion.div 
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                <motion.div variants={itemVariants}>
-                  <RegisterClubCard />
-                </motion.div>
-                
-                {filteredClubs
-                  .filter(club => !club.is_featured)
-                  .map((club) => (
-                  <motion.div key={club.id} variants={itemVariants}>
-                    <ClubCard club={club} />
-                  </motion.div>
-                ))}
-                
-                {filteredClubs.length === 0 && (
-                  <motion.div variants={itemVariants} className="col-span-full py-8">
-                    <p className="text-center text-muted-foreground">
-                      No clubs found. Create the first one!
-                    </p>
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
+            <ClubsTabContent 
+              isLoading={isLoadingClubs}
+              filteredClubs={filteredClubs}
+              renderSkeletons={renderSkeletons}
+              containerVariants={containerVariants}
+              itemVariants={itemVariants}
+            />
           </TabsContent>
           
           <TabsContent value="communities">
-            {isLoadingCommunities ? (
-              <motion.div 
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {renderSkeletons(7)}
-              </motion.div>
-            ) : (
-              <motion.div 
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {filteredCommunities
-                  .filter(community => !community.is_featured)
-                  .map((community) => (
-                  <motion.div key={community.id} variants={itemVariants}>
-                    <CommunityCard community={community} />
-                  </motion.div>
-                ))}
-
-                <motion.div variants={itemVariants}>
-                  <CreateCommunityCard />
-                </motion.div>
-                
-                {filteredCommunities.length === 0 && (
-                  <motion.div variants={itemVariants} className="col-span-full py-8">
-                    <p className="text-center text-muted-foreground">
-                      No communities found. Create the first one!
-                    </p>
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
+            <CommunitiesTabContent 
+              isLoading={isLoadingCommunities}
+              filteredCommunities={filteredCommunities}
+              renderSkeletons={renderSkeletons}
+              containerVariants={containerVariants}
+              itemVariants={itemVariants}
+            />
           </TabsContent>
         </Tabs>
       </div>
