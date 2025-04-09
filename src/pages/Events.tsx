@@ -7,19 +7,15 @@ import BottomNavbar from '@/components/layout/BottomNavbar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import HostEventForm from '@/components/events/HostEventForm';
-import EventGrid from '@/components/events/EventGrid';
-import { useEvents } from '@/hooks/useEvents';
 
 const Events = () => {
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
-  const { events, isLoading, refetch } = useEvents();
 
   const openHostModal = () => setIsHostModalOpen(true);
   const closeHostModal = () => setIsHostModalOpen(false);
 
   const handleEventCreated = () => {
     toast.success('Event created successfully!');
-    refetch();
     closeHostModal();
   };
 
@@ -42,11 +38,16 @@ const Events = () => {
         </div>
         
         <p className="text-muted-foreground mb-8">
-          Host and discover exciting events happening across campus.
+          Host exciting events happening across campus.
           From academic lectures to social gatherings, create events that match your interests.
         </p>
         
-        <EventGrid />
+        <div className="text-center py-12 bg-muted/30 rounded-lg border border-dashed">
+          <h3 className="text-xl font-medium mb-2">No events yet</h3>
+          <p className="text-muted-foreground">
+            Be the first to host an event! Click the "Host Event" button to get started.
+          </p>
+        </div>
 
         <HostEventForm 
           open={isHostModalOpen} 
