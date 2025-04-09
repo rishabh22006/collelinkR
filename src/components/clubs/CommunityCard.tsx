@@ -16,14 +16,15 @@ interface CommunityProps {
   image?: string;
 }
 
-const CommunityCard = ({ community }: { community: CommunityProps }) => {
+const CommunityCard = ({ community }: { community: any }) => {
   const [isJoined, setIsJoined] = useState(community.isJoined || false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const logoPlaceholder = community.name.charAt(0);
   
-  // Use members_count if available, fall back to members
-  const memberCount = community.members_count !== undefined ? 
-    community.members_count : (community.members || 0);
+  // Calculate member count from available properties
+  const memberCount = community.members_count ?? 
+                     community.member_count ?? 
+                     (community.members || 0);
 
   const handleJoinToggle = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -40,8 +41,8 @@ const CommunityCard = ({ community }: { community: CommunityProps }) => {
       >
         <div className="p-4 flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
-            {community.image ? (
-              <img src={community.image} alt={community.name} className="w-full h-full object-cover rounded-full" />
+            {community.logo_url ? (
+              <img src={community.logo_url} alt={community.name} className="w-full h-full object-cover rounded-full" />
             ) : (
               <span className="text-xl font-semibold text-muted-foreground">{logoPlaceholder}</span>
             )}

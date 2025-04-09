@@ -16,7 +16,7 @@ interface ClubProps {
   description?: string;
 }
 
-const ClubCard = ({ club }: { club: ClubProps }) => {
+const ClubCard = ({ club }: { club: any }) => {
   const [isJoined, setIsJoined] = useState(club.isJoined || false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const logoPlaceholder = club.name.charAt(0);
@@ -36,8 +36,8 @@ const ClubCard = ({ club }: { club: ClubProps }) => {
       >
         <div className="p-4 flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
-            {club.image ? (
-              <img src={club.image} alt={club.name} className="w-full h-full object-cover rounded-full" />
+            {club.logo_url ? (
+              <img src={club.logo_url} alt={club.name} className="w-full h-full object-cover rounded-full" />
             ) : (
               <span className="text-xl font-semibold text-muted-foreground">{logoPlaceholder}</span>
             )}

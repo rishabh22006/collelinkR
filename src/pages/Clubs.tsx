@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,41 @@ import RegisterClubCard from '@/components/clubs/RegisterClubCard';
 import CreateCommunityCard from '@/components/clubs/CreateCommunityCard';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Define extended types to include all possible properties
+interface ExtendedClub {
+  id: string;
+  name: string;
+  description?: string;
+  institution?: string;
+  logo_url?: string;
+  banner_url?: string;
+  category?: string;
+  is_featured?: boolean;
+  is_verified?: boolean;
+  creator_id?: string;
+  created_at: string;
+  updated_at?: string;
+  member_count?: number;
+  members_count?: number;
+}
+
+interface ExtendedCommunity {
+  id: string;
+  name: string;
+  description?: string;
+  institution?: string;
+  logo_url?: string;
+  banner_url?: string;
+  is_featured?: boolean;
+  is_private?: boolean;
+  is_verified?: boolean;
+  creator_id?: string;
+  created_at: string;
+  updated_at?: string;
+  members_count?: number;
+  member_count?: number;
+}
+
 const Clubs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("clubs");
@@ -38,8 +72,12 @@ const Clubs = () => {
         console.error('Error fetching clubs:', error);
         return [];
       }
-      
-      return data;
+
+      // Add derived properties for compatibility
+      return (data || []).map(club => ({
+        ...club,
+        category: club.category || 'General',
+      })) as ExtendedClub[];
     }
   });
   
@@ -57,15 +95,26 @@ const Clubs = () => {
         return [];
       }
       
-      return data;
+      return data || [];
     }
   });
   
-  // Extract unique categories from club and community data
+  // Extract all unique categories and add 'General' as default
   useEffect(() => {
     if (clubsData.length > 0) {
-      const categories = [...new Set(clubsData.map(club => club.category))];
-      setAllCategories(categories.filter(Boolean).sort());
+      const categoriesSet = new Set<string>();
+      
+      // Add 'General' as a default category
+      categoriesSet.add('General');
+      
+      // Add any other categories found in clubs
+      clubsData.forEach(club => {
+        if (club.category) {
+          categoriesSet.add(club.category);
+        }
+      });
+      
+      setAllCategories(Array.from(categoriesSet).sort());
     }
   }, [clubsData]);
 
@@ -89,7 +138,8 @@ const Clubs = () => {
       (club.institution && club.institution.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (club.category && club.category.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesCategory = activeFilters.length === 0 || (club.category && activeFilters.includes(club.category));
+    const matchesCategory = activeFilters.length === 0 || 
+                           (club.category && activeFilters.includes(club.category));
     
     return matchesSearch && matchesCategory;
   });
@@ -107,6 +157,34 @@ const Clubs = () => {
 
   const featuredClubs = filteredClubs.filter(club => club.is_featured);
   const featuredCommunities = filteredCommunities.filter(community => community.is_featured);
+
+  // Transform clubs for FeaturedClubCard
+  const transformClubForFeatured = (club: ExtendedClub) => ({
+    ...club,
+    id: club.id,
+    name: club.name,
+    institution: club.institution || '',
+    category: club.category || 'General',
+    image: club.logo_url || '',
+    isJoined: false,
+    isFeatured: true,
+    members: club.member_count || club.members_count || 0,
+    description: club.description || ''
+  });
+
+  // Transform community for FeaturedClubCard
+  const transformCommunityForFeatured = (community: ExtendedCommunity) => ({
+    ...community,
+    id: community.id,
+    name: community.name,
+    institution: community.institution || '',
+    category: 'Community',
+    image: community.logo_url || '',
+    isJoined: false,
+    isFeatured: true,
+    members: community.members_count || community.member_count || 0,
+    description: community.description || ''
+  });
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -212,17 +290,13 @@ const Clubs = () => {
             >
               {activeTab === "clubs" && featuredClubs.map((club) => (
                 <motion.div key={club.id} variants={itemVariants}>
-                  <FeaturedClubCard club={club} />
+                  <FeaturedClubCard club={transformClubForFeatured(club)} />
                 </motion.div>
               ))}
               
               {activeTab === "communities" && featuredCommunities.map((community) => (
                 <motion.div key={community.id} variants={itemVariants}>
-                  <FeaturedClubCard club={{
-                    ...community, 
-                    category: "Community",
-                    members: community.members_count || 0,
-                  }} />
+                  <FeaturedClubCard club={transformCommunityForFeatured(community)} />
                 </motion.div>
               ))}
             </motion.div>

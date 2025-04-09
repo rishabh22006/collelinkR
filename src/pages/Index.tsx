@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -19,7 +18,6 @@ const Index = () => {
   const headerRef = useScrollAnimation<HTMLHeadingElement>('scale');
   const descriptionRef = useScrollAnimation<HTMLParagraphElement>('fade', 0.2, 200);
   
-  // Fetch communities from database
   const { data: recommendedCommunities = [], isLoading: loadingCommunities } = useQuery({
     queryKey: ['communities', 'recommended'],
     queryFn: async () => {
@@ -38,7 +36,6 @@ const Index = () => {
     }
   });
   
-  // Fetch upcoming events from database
   const { data: upcomingEvents = [], isLoading: loadingEvents } = useQuery({
     queryKey: ['events', 'upcoming'],
     queryFn: async () => {
@@ -55,13 +52,26 @@ const Index = () => {
         console.error('Error fetching events:', error);
         return [];
       }
+
+      const eventsWithAttendees = await Promise.all((data || []).map(async event => {
+        const { count, error: countError } = await supabase
+          .from('event_attendees')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', event.id);
+
+        if (countError) {
+          console.error('Error counting attendees:', countError);
+          return { ...event, attendee_count: 0 };
+        }
+
+        return { ...event, attendee_count: count || 0 };
+      }));
       
-      return data;
+      return eventsWithAttendees;
     }
   });
   
   useEffect(() => {
-    // When component mounts, apply a fade-in animation to the body
     document.body.style.opacity = '0';
     setTimeout(() => {
       document.body.style.opacity = '1';
@@ -177,7 +187,6 @@ const Index = () => {
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Users size={14} className="mr-2" />
                       <span>
-                        {/* Display attendee count when available */}
                         {event.attendee_count || 0} attending
                       </span>
                     </div>
@@ -221,7 +230,7 @@ const Index = () => {
                 >
                   <h3 className="font-medium">{community.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {community.members_count || 0} members
+                    {community.members_count || community.member_count || 0} members
                   </p>
                   <Button variant="ghost" size="sm" className="mt-2">Join</Button>
                 </motion.div>

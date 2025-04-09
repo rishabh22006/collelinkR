@@ -31,9 +31,15 @@ const EventGrid = () => {
     );
   }
 
+  // Ensure events have attendee_count property
+  const eventsWithDefaultAttendees = events.map(event => ({
+    ...event,
+    attendee_count: event.attendee_count || 0
+  }));
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {events.map(event => (
+      {eventsWithDefaultAttendees.map(event => (
         <EventCard 
           key={event.id} 
           event={event}

@@ -72,8 +72,8 @@ const Communities = () => {
                   <div>
                     <h3 className="font-medium text-lg">{community.name}</h3>
                     <p className="text-muted-foreground text-sm">
-                      {/* Display member count when available */}
-                      {community.members_count || 0} members
+                      {/* Calculate members using available properties */}
+                      {community.members_count || community.member_count || 0} members
                     </p>
                   </div>
                   <button className="rounded-full bg-primary/10 text-primary p-1.5">
