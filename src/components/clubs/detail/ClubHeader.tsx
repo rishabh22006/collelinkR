@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ArrowLeft, Award, Shield, UserMinus, UserPlus } from 'lucide-react';
+import { ArrowLeft, Award, Shield, UserMinus, UserPlus, Users, CalendarPlus, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

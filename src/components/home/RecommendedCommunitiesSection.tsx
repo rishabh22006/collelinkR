@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import RecommendedCommunityCard from './RecommendedCommunityCard';
 
 interface RecommendedCommunitiesSectionProps {
