@@ -29,17 +29,21 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Link as LinkIcon, Globe, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useEventHost } from '@/hooks/useEventHost';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 interface HostEventFormProps {
   open: boolean;
   onClose: () => void;
+  onEventCreated?: () => void;
   hostType: 'club' | 'community';
-  hostId: string;
+  hostId: string | null;
   hostName: string;
 }
 
@@ -47,10 +51,16 @@ interface FormValues {
   title: string;
   description: string;
   date: Date;
+  time: string;
   endDate?: Date;
+  endTime?: string;
   location?: string;
   category: string;
+  isOnline: boolean;
+  onlineLink?: string;
   imageUrl?: string;
+  cardColor: string;
+  textColor: string;
 }
 
 const eventCategories = [
@@ -64,9 +74,23 @@ const eventCategories = [
   'Other'
 ];
 
-const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventFormProps) => {
-  const { hostEvent, canHostEvent } = useEventHost();
+const colorOptions = [
+  { name: 'Blue', bg: 'bg-blue-500', text: 'text-white' },
+  { name: 'Green', bg: 'bg-green-500', text: 'text-white' },
+  { name: 'Red', bg: 'bg-red-500', text: 'text-white' },
+  { name: 'Purple', bg: 'bg-purple-500', text: 'text-white' },
+  { name: 'Orange', bg: 'bg-orange-500', text: 'text-white' },
+  { name: 'Pink', bg: 'bg-pink-500', text: 'text-white' },
+  { name: 'Teal', bg: 'bg-teal-500', text: 'text-white' },
+  { name: 'Yellow', bg: 'bg-yellow-400', text: 'text-black' },
+  { name: 'Gray', bg: 'bg-gray-500', text: 'text-white' },
+  { name: 'White', bg: 'bg-white', text: 'text-black' },
+];
+
+const HostEventForm = ({ open, onClose, onEventCreated, hostType, hostId, hostName }: HostEventFormProps) => {
+  const { hostEvent } = useEventHost();
   const [isChecking, setIsChecking] = useState(false);
+  const [locationTab, setLocationTab] = useState("physical");
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -74,39 +98,63 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
       description: '',
       category: eventCategories[0],
       date: new Date(),
+      time: '12:00',
+      isOnline: false,
+      cardColor: 'bg-blue-500',
+      textColor: 'text-white',
     }
   });
+
+  const watchIsOnline = form.watch("isOnline");
 
   const onSubmit = async (data: FormValues) => {
     setIsChecking(true);
     
     try {
-      // Check if user can host event
-      const canHost = await canHostEvent(hostType, hostId);
-      
-      if (!canHost) {
-        toast.error(`You don't have permission to host events for this ${hostType}`);
-        return;
+      // Combine date and time
+      const dateTime = new Date(data.date);
+      const [hours, minutes] = data.time.split(':').map(Number);
+      dateTime.setHours(hours, minutes);
+
+      // Combine end date and time if provided
+      let endDateTime = undefined;
+      if (data.endDate) {
+        endDateTime = new Date(data.endDate);
+        if (data.endTime) {
+          const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+          endDateTime.setHours(endHours, endMinutes);
+        } else {
+          // Default to end of day
+          endDateTime.setHours(23, 59);
+        }
       }
       
-      // Format dates to ISO strings
+      // Format data for submission
       const formattedData = {
         title: data.title,
         description: data.description,
-        date: data.date.toISOString(),
-        end_date: data.endDate?.toISOString(),
-        location: data.location,
+        date: dateTime.toISOString(),
+        end_date: endDateTime?.toISOString(),
+        location: data.isOnline ? 'Online' : data.location,
         category: data.category,
         image_url: data.imageUrl,
         host_type: hostType,
-        host_id: hostId
+        host_id: hostId || undefined,
+        metadata: {
+          isOnline: data.isOnline,
+          onlineLink: data.onlineLink,
+          cardColor: data.cardColor,
+          textColor: data.textColor
+        }
       };
       
       await hostEvent.mutateAsync(formattedData);
       form.reset();
+      if (onEventCreated) onEventCreated();
       onClose();
     } catch (error) {
       console.error('Error hosting event:', error);
+      toast.error('Failed to create event. Please try again.');
     } finally {
       setIsChecking(false);
     }
@@ -114,11 +162,11 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Host a New Event</DialogTitle>
           <DialogDescription>
-            Create an event for {hostName} ({hostType})
+            Create an event as {hostName}
           </DialogDescription>
         </DialogHeader>
         
@@ -185,7 +233,7 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value}
@@ -199,6 +247,23 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
                 )}
               />
               
+              <FormField
+                control={form.control}
+                name="time"
+                rules={{ required: "Start time is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="endDate"
@@ -224,7 +289,7 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value}
@@ -241,21 +306,96 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             
             <FormField
               control={form.control}
-              name="location"
+              name="isOnline"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location (Optional)</FormLabel>
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Online Event</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Toggle if this is an online event
+                    </p>
+                  </div>
                   <FormControl>
-                    <Input placeholder="Enter event location" {...field} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
+            
+            {watchIsOnline ? (
+              <FormField
+                control={form.control}
+                name="onlineLink"
+                rules={{
+                  required: watchIsOnline ? "Online meeting link is required" : false,
+                  pattern: {
+                    value: /^(http|https):\/\/[^ "]+$/,
+                    message: "Please enter a valid URL",
+                  }
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meeting Link</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center border rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 bg-background">
+                        <LinkIcon className="ml-2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="https://meet.google.com/abc-defg-hij"
+                          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          {...field} 
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="location"
+                rules={{
+                  required: !watchIsOnline ? "Location is required" : false,
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center border rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 bg-background">
+                        <MapPin className="ml-2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Enter event location" 
+                          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <FormField
               control={form.control}
@@ -291,14 +431,93 @@ const HostEventForm = ({ open, onClose, hostType, hostId, hostName }: HostEventF
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL (Optional)</FormLabel>
+                  <FormLabel>Event Image URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter image URL" {...field} />
+                    <Input placeholder="Enter image URL for event poster/banner" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add a URL to an image for your event poster or banner
+                  </p>
                 </FormItem>
               )}
             />
+            
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium">Card Appearance</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="cardColor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Background Color</FormLabel>
+                      <div className="grid grid-cols-5 gap-2">
+                        {colorOptions.slice(0, 10).map((color) => (
+                          <div 
+                            key={color.name}
+                            className={cn(
+                              "w-full aspect-square rounded-md cursor-pointer border-2",
+                              color.bg,
+                              field.value === color.bg ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-transparent"
+                            )}
+                            title={color.name}
+                            onClick={() => {
+                              field.onChange(color.bg);
+                              // If we change background color, update text color accordingly
+                              form.setValue("textColor", color.text);
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="textColor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Text Color</FormLabel>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div 
+                          className={cn(
+                            "flex items-center justify-center h-10 rounded-md cursor-pointer border-2",
+                            "bg-white",
+                            field.value === 'text-black' ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-transparent"
+                          )}
+                          onClick={() => field.onChange('text-black')}
+                        >
+                          <span className="text-black font-medium">Text</span>
+                        </div>
+                        
+                        <div 
+                          className={cn(
+                            "flex items-center justify-center h-10 rounded-md cursor-pointer border-2",
+                            "bg-black",
+                            field.value === 'text-white' ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-transparent"
+                          )}
+                          onClick={() => field.onChange('text-white')}
+                        >
+                          <span className="text-white font-medium">Text</span>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className={cn(
+                "p-4 rounded-md mt-2 transition-colors border",
+                form.watch('cardColor'),
+                form.watch('textColor')
+              )}>
+                <p className="font-medium">Card Preview</p>
+                <p className="text-sm opacity-80">This is how your event card will appear</p>
+              </div>
+            </div>
             
             <DialogFooter>
               <Button 

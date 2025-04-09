@@ -15,7 +15,13 @@ export interface Event {
   community_id: string | null;
   created_at: string;
   updated_at: string | null;
-  host_type: 'club' | 'community' | null;
+  host_type: 'club' | 'community' | 'user' | null;
+  metadata?: {
+    isOnline?: boolean;
+    onlineLink?: string;
+    cardColor?: string;
+    textColor?: string;
+  };
 }
 
 export interface EventAttendee {
