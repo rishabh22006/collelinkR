@@ -63,7 +63,7 @@ const MoreDropdown = () => {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to="#" className="w-full flex items-center">
+            <Link to="/settings" className="w-full flex items-center">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </Link>
