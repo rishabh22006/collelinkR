@@ -2,13 +2,28 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { CommunityDataProps } from '@/data/clubsData';
 import CommunityDetailView from './CommunityDetailView';
 
-const CommunityCard = ({ community }: { community: CommunityDataProps }) => {
-  const [isJoined, setIsJoined] = useState(community.isJoined);
+interface CommunityProps {
+  id: number | string;
+  name: string;
+  institution?: string;
+  members_count?: number;
+  members?: number;  // For backward compatibility
+  description?: string;
+  isJoined?: boolean;
+  isFeatured?: boolean;
+  image?: string;
+}
+
+const CommunityCard = ({ community }: { community: CommunityProps }) => {
+  const [isJoined, setIsJoined] = useState(community.isJoined || false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const logoPlaceholder = community.name.charAt(0);
+  
+  // Use members_count if available, fall back to members
+  const memberCount = community.members_count !== undefined ? 
+    community.members_count : (community.members || 0);
 
   const handleJoinToggle = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -32,8 +47,8 @@ const CommunityCard = ({ community }: { community: CommunityDataProps }) => {
             )}
           </div>
           <h3 className="font-medium text-base mb-1 text-foreground">{community.name}</h3>
-          <p className="text-sm text-muted-foreground mb-1">{community.institution}</p>
-          <p className="text-xs text-muted-foreground mb-3">{community.members} members</p>
+          <p className="text-sm text-muted-foreground mb-1">{community.institution || ''}</p>
+          <p className="text-xs text-muted-foreground mb-3">{memberCount} members</p>
           <Button 
             variant={isJoined ? "secondary" : "default"} 
             size="sm"

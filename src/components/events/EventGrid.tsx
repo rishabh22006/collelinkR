@@ -20,7 +20,7 @@ const EventGrid = () => {
     );
   }
   
-  if (events.length === 0) {
+  if (!events || events.length === 0) {
     return (
       <div className="text-center py-12 bg-muted/30 rounded-lg border border-dashed">
         <h3 className="text-xl font-medium mb-2">No events yet</h3>

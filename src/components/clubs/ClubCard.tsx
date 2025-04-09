@@ -2,11 +2,22 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { ClubDataProps } from '@/data/clubsData';
 import ClubDetailView from './ClubDetailView';
 
-const ClubCard = ({ club }: { club: ClubDataProps }) => {
-  const [isJoined, setIsJoined] = useState(club.isJoined);
+interface ClubProps {
+  id: number | string;
+  name: string;
+  institution?: string;
+  category?: string;
+  image?: string;
+  isJoined?: boolean;
+  isFeatured?: boolean;
+  members?: number;
+  description?: string;
+}
+
+const ClubCard = ({ club }: { club: ClubProps }) => {
+  const [isJoined, setIsJoined] = useState(club.isJoined || false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const logoPlaceholder = club.name.charAt(0);
 
@@ -32,7 +43,7 @@ const ClubCard = ({ club }: { club: ClubDataProps }) => {
             )}
           </div>
           <h3 className="font-medium text-base mb-1 text-foreground">{club.name}</h3>
-          <p className="text-sm text-muted-foreground mb-3">{club.institution}</p>
+          <p className="text-sm text-muted-foreground mb-3">{club.institution || ''}</p>
           <Button 
             variant={isJoined ? "secondary" : "default"} 
             size="sm"

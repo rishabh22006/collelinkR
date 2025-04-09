@@ -7,22 +7,14 @@ import { useEvents } from '@/hooks/useEvents';
 import CategoryFilter from './CategoryFilter';
 import FeaturedEventsList from './FeaturedEventsList';
 import RegularEventsList from './RegularEventsList';
+import { useNavigate } from 'react-router-dom';
 
 interface EventListProps {
   className?: string;
 }
 
-const categories = [
-  'All',
-  'Hackathons',
-  'Workshops',
-  'Fests',
-  'Social',
-  'Sports',
-  'Academic'
-];
-
 const EventList = ({ className }: EventListProps) => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
   
@@ -34,6 +26,23 @@ const EventList = ({ className }: EventListProps) => {
     getEventAttendees,
     registerForEvent
   } = useEvents();
+  
+  const categories = ['All'];
+  
+  // Extract unique categories from events
+  useEffect(() => {
+    if (events.length > 0) {
+      const uniqueCategories = [...new Set(events.map(event => event.category))];
+      if (uniqueCategories.length > 0 && !categories.includes('All')) {
+        categories.push('All');
+      }
+      uniqueCategories.forEach(category => {
+        if (category && !categories.includes(category)) {
+          categories.push(category);
+        }
+      });
+    }
+  }, [events]);
   
   const filteredEvents = events.filter(event => 
     selectedCategory === 'All' || event.category === selectedCategory
@@ -69,6 +78,10 @@ const EventList = ({ className }: EventListProps) => {
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
   };
+  
+  const handleViewAll = () => {
+    navigate('/events');
+  };
 
   if (isLoading) {
     return (
@@ -78,19 +91,37 @@ const EventList = ({ className }: EventListProps) => {
       </div>
     );
   }
+  
+  if (!events || events.length === 0) {
+    return (
+      <div className={cn("space-y-6", className)}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Events</h2>
+          <Button variant="outline" size="sm" onClick={handleViewAll}>View All</Button>
+        </div>
+        
+        <div className="text-center py-8 border border-dashed rounded-lg">
+          <p className="text-muted-foreground mb-3">No events have been created yet</p>
+          <Button onClick={handleViewAll} size="sm">Host an Event</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-6", className)}>
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Events</h2>
-        <Button variant="outline" size="sm">View All</Button>
+        <Button variant="outline" size="sm" onClick={handleViewAll}>View All</Button>
       </div>
       
-      <CategoryFilter 
-        categories={categories}
-        selectedCategory={selectedCategory}
-        onCategoryChange={handleCategoryChange}
-      />
+      {categories.length > 1 && (
+        <CategoryFilter 
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
+        />
+      )}
       
       <FeaturedEventsList
         events={featuredEvents}
