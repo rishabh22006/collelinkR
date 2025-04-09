@@ -1,15 +1,13 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { Calendar, MapPin, Users, School, Globe, FileDown, Link as LinkIcon } from 'lucide-react';
+import { Calendar, MapPin, Users, Link as LinkIcon } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/events';
 import { useAuthStore } from '@/stores/authStore';
-import { useEvents } from '@/hooks/useEvents';
 import { toast } from 'sonner';
 
 interface EventCardProps {
@@ -21,9 +19,7 @@ interface EventCardProps {
 
 const EventCard = ({ event, onRegister, isRegistered, attendeeCount = 0 }: EventCardProps) => {
   const { profile } = useAuthStore();
-  const { exportAttendeeList } = useEvents();
   
-  const isHost = profile?.id === event.host_id;
   const cardBgColor = event.metadata?.cardColor || 'bg-card';
   const cardTextColor = event.metadata?.textColor || '';
   const isOnline = event.metadata?.isOnline;
@@ -33,11 +29,6 @@ const EventCard = ({ event, onRegister, isRegistered, attendeeCount = 0 }: Event
     const date = new Date(dateString);
     return format(date, 'EEE, MMM d, yyyy h:mm a');
   };
-  
-  const handleExportAttendees = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click event
-    exportAttendeeList(event.id, event.title);
-  };
 
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
@@ -45,15 +36,6 @@ const EventCard = ({ event, onRegister, isRegistered, attendeeCount = 0 }: Event
     if (onlineLink) {
       window.open(onlineLink, '_blank');
     }
-  };
-
-  const getHostIcon = () => {
-    if (event.host_type === 'club') {
-      return <School className="h-4 w-4 mr-1" />;
-    } else if (event.host_type === 'community') {
-      return <Globe className="h-4 w-4 mr-1" />;
-    }
-    return null;
   };
 
   const handleRSVP = (e: React.MouseEvent) => {
@@ -88,13 +70,6 @@ const EventCard = ({ event, onRegister, isRegistered, attendeeCount = 0 }: Event
           <Badge variant={isRegistered ? "secondary" : "outline"} className="bg-background/80">
             {event.category}
           </Badge>
-          
-          {event.host_type && (
-            <Badge variant="outline" className="flex items-center bg-background/80">
-              {getHostIcon()}
-              {event.host_type.charAt(0).toUpperCase() + event.host_type.slice(1)}
-            </Badge>
-          )}
         </div>
         <h3 className="font-semibold text-lg">{event.title}</h3>
         
@@ -139,29 +114,15 @@ const EventCard = ({ event, onRegister, isRegistered, attendeeCount = 0 }: Event
           </div>
         </div>
         
-        <div className="flex gap-2">
-          {isHost && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleExportAttendees}
-              className="gap-1 bg-background/80"
-            >
-              <FileDown className="h-4 w-4" />
-              Export
-            </Button>
-          )}
-          
-          <Button 
-            variant={isRegistered ? "secondary" : "default"} 
-            size="sm"
-            onClick={handleRSVP}
-            disabled={isRegistered}
-            className="bg-background/80 text-foreground hover:bg-background"
-          >
-            {isRegistered ? 'Registered' : 'RSVP'}
-          </Button>
-        </div>
+        <Button 
+          variant={isRegistered ? "secondary" : "default"} 
+          size="sm"
+          onClick={handleRSVP}
+          disabled={isRegistered}
+          className="bg-background/80 text-foreground hover:bg-background"
+        >
+          {isRegistered ? 'Registered' : 'RSVP'}
+        </Button>
       </CardFooter>
     </Card>
   );

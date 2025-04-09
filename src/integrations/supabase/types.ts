@@ -488,10 +488,12 @@ export type Database = {
           description: string | null
           end_date: string | null
           host_id: string | null
+          host_type: string | null
           id: string
           image_url: string | null
           is_featured: boolean | null
           location: string | null
+          metadata: Json | null
           title: string
           updated_at: string | null
         }
@@ -503,10 +505,12 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           host_id?: string | null
+          host_type?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
           location?: string | null
+          metadata?: Json | null
           title: string
           updated_at?: string | null
         }
@@ -518,10 +522,12 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           host_id?: string | null
+          host_type?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
           location?: string | null
+          metadata?: Json | null
           title?: string
           updated_at?: string | null
         }

@@ -13,7 +13,7 @@ interface HostEventParams {
   location?: string;
   category: string;
   image_url?: string;
-  host_type?: 'club' | 'community';
+  host_type?: 'club' | 'community' | 'user';
   host_id?: string;
   metadata?: Record<string, any>;
 }
@@ -24,34 +24,6 @@ interface HostEventParams {
 export const useEventHost = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuthStore();
-
-  // Check if user can host an event
-  const canHostEvent = async (hostType: string, hostId: string | null) => {
-    // If no specific host is provided, the user is hosting as themselves
-    if (!hostId) return true;
-
-    try {
-      if (hostType === 'club') {
-        const { data, error } = await supabase.rpc('is_club_admin', { 
-          club_uuid: hostId, 
-          user_uuid: profile?.id 
-        });
-        if (error) throw error;
-        return data;
-      } else if (hostType === 'community') {
-        const { data, error } = await supabase.rpc('is_community_admin', { 
-          community_uuid: hostId, 
-          user_uuid: profile?.id 
-        });
-        if (error) throw error;
-        return data;
-      }
-      return false;
-    } catch (err) {
-      console.error('Error checking host permissions:', err);
-      return false;
-    }
-  };
 
   // Host a new event
   const hostEvent = useMutation({
@@ -72,7 +44,6 @@ export const useEventHost = () => {
             category: eventData.category,
             image_url: eventData.image_url,
             host_id: eventData.host_id || profile.id,
-            community_id: eventData.host_type === 'community' ? eventData.host_id : null,
             host_type: eventData.host_type || 'user',
             metadata: eventData.metadata
           })
@@ -89,7 +60,7 @@ export const useEventHost = () => {
         throw err;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success('Event created successfully!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
     },
@@ -101,7 +72,6 @@ export const useEventHost = () => {
   });
 
   return {
-    canHostEvent,
     hostEvent
   };
 };

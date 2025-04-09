@@ -42,7 +42,7 @@ interface HostEventFormProps {
   open: boolean;
   onClose: () => void;
   onEventCreated?: () => void;
-  hostType: 'club' | 'community';
+  hostType: 'club' | 'community' | 'user';
   hostId: string | null;
   hostName: string;
 }
@@ -90,7 +90,6 @@ const colorOptions = [
 const HostEventForm = ({ open, onClose, onEventCreated, hostType, hostId, hostName }: HostEventFormProps) => {
   const { hostEvent } = useEventHost();
   const [isChecking, setIsChecking] = useState(false);
-  const [locationTab, setLocationTab] = useState("physical");
 
   const form = useForm<FormValues>({
     defaultValues: {

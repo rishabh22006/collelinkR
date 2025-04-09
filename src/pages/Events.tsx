@@ -52,7 +52,7 @@ const Events = () => {
           open={isHostModalOpen} 
           onClose={closeHostModal}
           onEventCreated={handleEventCreated}
-          hostType="club"
+          hostType="user"
           hostId={null}
           hostName="You"
         />
