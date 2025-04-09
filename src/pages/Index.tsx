@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -12,6 +13,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Helper function to safely get member count
+const getMemberCount = (community: any) => {
+  return community.members_count || community.member_count || 0;
+};
 
 const Index = () => {
   const { session, profile } = useAuthStore();
@@ -187,7 +193,7 @@ const Index = () => {
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Users size={14} className="mr-2" />
                       <span>
-                        {event.attendee_count || 0} attending
+                        {(event as any).attendee_count || 0} attending
                       </span>
                     </div>
                   </div>
@@ -230,7 +236,7 @@ const Index = () => {
                 >
                   <h3 className="font-medium">{community.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {community.members_count || community.member_count || 0} members
+                    {getMemberCount(community)} members
                   </p>
                   <Button variant="ghost" size="sm" className="mt-2">Join</Button>
                 </motion.div>

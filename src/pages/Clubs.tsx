@@ -76,7 +76,7 @@ const Clubs = () => {
       // Add derived properties for compatibility
       return (data || []).map(club => ({
         ...club,
-        category: club.category || 'General',
+        category: 'General' // Default category for all clubs
       })) as ExtendedClub[];
     }
   });
@@ -160,8 +160,7 @@ const Clubs = () => {
 
   // Transform clubs for FeaturedClubCard
   const transformClubForFeatured = (club: ExtendedClub) => ({
-    ...club,
-    id: club.id,
+    id: Number(club.id), // Convert string ID to number for compatibility
     name: club.name,
     institution: club.institution || '',
     category: club.category || 'General',
@@ -174,8 +173,7 @@ const Clubs = () => {
 
   // Transform community for FeaturedClubCard
   const transformCommunityForFeatured = (community: ExtendedCommunity) => ({
-    ...community,
-    id: community.id,
+    id: Number(community.id), // Convert string ID to number for compatibility
     name: community.name,
     institution: community.institution || '',
     category: 'Community',

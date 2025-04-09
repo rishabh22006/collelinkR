@@ -35,6 +35,11 @@ const Communities = () => {
     console.log("Create community clicked");
   };
 
+  // Helper function to get member count safely
+  const getMemberCount = (community: any) => {
+    return community.members_count || community.member_count || 0;
+  };
+
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -72,8 +77,7 @@ const Communities = () => {
                   <div>
                     <h3 className="font-medium text-lg">{community.name}</h3>
                     <p className="text-muted-foreground text-sm">
-                      {/* Calculate members using available properties */}
-                      {community.members_count || community.member_count || 0} members
+                      {getMemberCount(community)} members
                     </p>
                   </div>
                   <button className="rounded-full bg-primary/10 text-primary p-1.5">

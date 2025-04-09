@@ -31,19 +31,20 @@ const EventGrid = () => {
     );
   }
 
-  // Ensure events have attendee_count property
-  const eventsWithDefaultAttendees = events.map(event => ({
+  // Process events data to ensure all events have required properties
+  const processedEvents = events.map(event => ({
     ...event,
-    attendee_count: event.attendee_count || 0
+    attendee_count: (event as any).attendee_count || 0
   }));
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {eventsWithDefaultAttendees.map(event => (
+      {processedEvents.map(event => (
         <EventCard 
           key={event.id} 
           event={event}
           onRegister={() => handleRegister(event.id)}
+          attendeeCount={(event as any).attendee_count || 0}
         />
       ))}
     </div>
