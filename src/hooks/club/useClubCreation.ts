@@ -18,8 +18,6 @@ export const useClubCreation = () => {
       name: string;
       description?: string;
       institution?: string;
-      logo_url?: string;
-      banner_url?: string;
     }) => {
       if (!profile?.id) {
         throw new Error('You must be logged in to create a club');
@@ -35,8 +33,6 @@ export const useClubCreation = () => {
             name: clubData.name,
             description: clubData.description || null,
             institution: clubData.institution || null,
-            logo_url: clubData.logo_url || null,
-            banner_url: clubData.banner_url || null,
             creator_id: profile.id
           })
           .select()

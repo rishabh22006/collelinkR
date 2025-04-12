@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Upload, Users, Info } from 'lucide-react';
+import { ArrowLeft, Users, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,7 +24,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { uploadFile, STORAGE_BUCKETS } from '@/utils/setupStorage';
 import { useCommunities } from '@/hooks/useCommunities';
 
 const formSchema = z.object({
@@ -45,10 +44,6 @@ const RegisterCommunity = () => {
   const navigate = useNavigate();
   const { createCommunity } = useCommunities();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,46 +55,6 @@ const RegisterCommunity = () => {
     },
   });
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large", {
-          description: "Logo image must be less than 5MB",
-        });
-        return;
-      }
-      setLogoFile(file);
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("File too large", {
-          description: "Banner image must be less than 10MB",
-        });
-        return;
-      }
-      setBannerFile(file);
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBannerPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!profile) {
       toast.error("You must be logged in to create a community");
@@ -110,30 +65,10 @@ const RegisterCommunity = () => {
     setIsSubmitting(true);
     
     try {
-      // Upload logo if available
-      let logoUrl = null;
-      if (logoFile) {
-        logoUrl = await uploadFile(STORAGE_BUCKETS.COMMUNITY_LOGOS, logoFile);
-        if (!logoUrl) {
-          throw new Error("Failed to upload logo");
-        }
-      }
-
-      // Upload banner if available
-      let bannerUrl = null;
-      if (bannerFile) {
-        bannerUrl = await uploadFile(STORAGE_BUCKETS.COMMUNITY_BANNERS, bannerFile);
-        if (!bannerUrl) {
-          throw new Error("Failed to upload banner");
-        }
-      }
-      
-      // Create community using the hook
+      // Create community using the hook without logo and banner
       await createCommunity.mutateAsync({
         name: values.name,
         description: values.description,
-        logo_url: logoUrl,
-        banner_url: bannerUrl,
         is_private: values.isPrivate
       });
       
@@ -188,86 +123,6 @@ const RegisterCommunity = () => {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-secondary/20 transition-colors">
-                      {logoPreview ? (
-                        <div className="relative">
-                          <img 
-                            src={logoPreview} 
-                            alt="Logo preview" 
-                            className="w-28 h-28 object-cover rounded-lg"
-                          />
-                          <Button 
-                            type="button"
-                            variant="secondary" 
-                            size="sm" 
-                            className="absolute -top-2 -right-2"
-                            onClick={() => {
-                              setLogoFile(null);
-                              setLogoPreview(null);
-                            }}
-                          >
-                            Change
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                          <p className="text-sm font-medium mb-1">Community Logo</p>
-                          <p className="text-xs text-muted-foreground mb-2">PNG, JPG up to 5MB</p>
-                          <Button type="button" variant="secondary" size="sm">
-                            Select File
-                          </Button>
-                          <input 
-                            type="file" 
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                            onChange={handleLogoChange}
-                            accept="image/*"
-                          />
-                        </>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-secondary/20 transition-colors">
-                      {bannerPreview ? (
-                        <div className="relative">
-                          <img 
-                            src={bannerPreview} 
-                            alt="Banner preview" 
-                            className="w-full h-28 object-cover rounded-lg"
-                          />
-                          <Button 
-                            type="button"
-                            variant="secondary" 
-                            size="sm" 
-                            className="absolute -top-2 -right-2"
-                            onClick={() => {
-                              setBannerFile(null);
-                              setBannerPreview(null);
-                            }}
-                          >
-                            Change
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                          <p className="text-sm font-medium mb-1">Community Banner</p>
-                          <p className="text-xs text-muted-foreground mb-2">Recommended: 1200x400px</p>
-                          <Button type="button" variant="secondary" size="sm">
-                            Select File
-                          </Button>
-                          <input 
-                            type="file" 
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                            onChange={handleBannerChange}
-                            accept="image/*"
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
                   <FormField
                     control={form.control}
                     name="name"

@@ -16,8 +16,6 @@ export const useCommunityCreation = () => {
     mutationFn: async (communityData: {
       name: string;
       description?: string;
-      logo_url?: string;
-      banner_url?: string;
       is_private?: boolean;
     }) => {
       if (!profile?.id) {
@@ -31,8 +29,6 @@ export const useCommunityCreation = () => {
           .insert({
             name: communityData.name,
             description: communityData.description || null,
-            logo_url: communityData.logo_url || null,
-            banner_url: communityData.banner_url || null,
             creator_id: profile.id,
             is_private: communityData.is_private || false
           })
