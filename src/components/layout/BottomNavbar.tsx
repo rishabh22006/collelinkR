@@ -1,75 +1,78 @@
 
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, UsersRound, Calendar, MessageSquare } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import React from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import {
+  Home,
+  Calendar,
+  Users,
+  UserCheck,
+  Settings,
+} from 'lucide-react';
 
 const BottomNavbar = () => {
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const navItems = [
-    { name: 'Home', path: '/', icon: Home },
-    { name: 'Search', path: '/search', icon: Search },
-    { name: 'Clubs', path: '/clubs', icon: UsersRound },
-    { name: 'Events', path: '/events', icon: Calendar },
-    { name: 'Messages', path: '/messages', icon: MessageSquare },
-  ];
+  const pathname = location.pathname;
 
   const isActive = (path: string) => {
-    // Special case for communities and clubs to highlight the same tab
-    if (path === '/clubs' && (location.pathname === '/clubs' || location.pathname === '/communities')) {
-      return true;
-    }
-    // Special case for events and calendar to highlight the same tab
-    if (path === '/events' && (location.pathname === '/events' || location.pathname === '/calendar')) {
-      return true;
-    }
-    return location.pathname === path;
+    return pathname === path;
   };
 
   return (
-    <motion.div 
-      className="fixed bottom-0 left-0 right-0 bg-background border-t py-2 px-3 z-50 flex justify-between items-center"
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      {navItems.map((item) => (
-        <Button
-          key={item.name}
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "flex-col h-16 rounded-xl hover:bg-primary/10",
-            isActive(item.path) && "text-primary"
-          )}
-          onClick={() => navigate(item.path)}
-        >
-          <item.icon 
-            size={isActive(item.path) ? 22 : 20} 
-            className={cn(
-              "mb-1 transition-all",
-              isActive(item.path) ? "stroke-[2.5px]" : "stroke-[1.5px]",
-            )} 
-          />
-          <span className={cn(
-            "text-xs",
-            isActive(item.path) ? "font-bold" : "font-medium text-muted-foreground"
-          )}>
-            {item.name}
-          </span>
-          {isActive(item.path) && (
-            <motion.div
-              layoutId="bottomNav"
-              className="absolute bottom-0 h-1 w-1/2 rounded-t-full bg-primary"
-              transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-            />
-          )}
-        </Button>
-      ))}
-    </motion.div>
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
+      <div className="container max-w-lg mx-auto px-4">
+        <div className="flex justify-between items-center">
+          <Link
+            to="/"
+            className={`py-3 px-2 flex flex-1 flex-col items-center justify-center ${
+              isActive('/') ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Home size={20} strokeWidth={2} />
+            <span className="text-xs mt-1">Home</span>
+          </Link>
+
+          <Link
+            to="/events"
+            className={`py-3 px-2 flex flex-1 flex-col items-center justify-center ${
+              isActive('/events') ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Calendar size={20} strokeWidth={2} />
+            <span className="text-xs mt-1">Events</span>
+          </Link>
+
+          <Link
+            to="/communities"
+            className={`py-3 px-2 flex flex-1 flex-col items-center justify-center ${
+              pathname.includes('/communities') ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Users size={20} strokeWidth={2} />
+            <span className="text-xs mt-1">Communities</span>
+          </Link>
+
+          <Link
+            to="/clubs"
+            className={`py-3 px-2 flex flex-1 flex-col items-center justify-center ${
+              pathname.includes('/clubs') ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <UserCheck size={20} strokeWidth={2} />
+            <span className="text-xs mt-1">Clubs</span>
+          </Link>
+
+          <Link
+            to="/settings"
+            className={`py-3 px-2 flex flex-1 flex-col items-center justify-center ${
+              isActive('/settings') ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Settings size={20} strokeWidth={2} />
+            <span className="text-xs mt-1">Settings</span>
+          </Link>
+        </div>
+      </div>
+    </nav>
   );
 };
 

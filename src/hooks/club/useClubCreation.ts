@@ -26,7 +26,9 @@ export const useClubCreation = () => {
       }
 
       try {
-        // Create the club first
+        console.log('Creating club with data:', { ...clubData, creator_id: profile.id });
+        
+        // Create the club first with the authenticated user as creator
         const { data: newClub, error: clubError } = await supabase
           .from('clubs')
           .insert({
@@ -41,8 +43,15 @@ export const useClubCreation = () => {
           .single();
 
         if (clubError) {
-          throw clubError;
+          console.error('Error creating club:', clubError);
+          throw new Error(`Failed to create club: ${clubError.message}`);
         }
+
+        if (!newClub) {
+          throw new Error('No data returned from club creation');
+        }
+
+        console.log('Club created:', newClub);
 
         // Make creator an admin
         const { error: adminError } = await supabase
@@ -53,7 +62,8 @@ export const useClubCreation = () => {
           });
 
         if (adminError) {
-          throw adminError;
+          console.error('Error adding creator as admin:', adminError);
+          throw new Error(`Failed to add creator as admin: ${adminError.message}`);
         }
 
         // Also make creator a member
@@ -65,7 +75,8 @@ export const useClubCreation = () => {
           });
 
         if (memberError) {
-          throw memberError;
+          console.error('Error adding creator as member:', memberError);
+          throw new Error(`Failed to add creator as member: ${memberError.message}`);
         }
 
         return newClub as Club;

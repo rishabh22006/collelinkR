@@ -51,12 +51,29 @@ serve(async (req) => {
         
         const { error: createError } = await supabase.storage.createBucket(bucketName, {
           public: true, // Make buckets public so files can be accessed without authentication
+          fileSizeLimit: bucketName === 'club-banners' || bucketName === 'community-banners' ? 10485760 : 5242880, // 10MB for banners, 5MB for others
         });
         
         if (createError) {
           results.push({ bucket: bucketName, success: false, error: createError.message });
         } else {
-          results.push({ bucket: bucketName, success: true, created: true });
+          // Set public access policies for the bucket
+          const { error: policyError } = await supabase.storage.from(bucketName).createPolicy('public-read-write', {
+            name: 'Public Read Write',
+            definition: {
+              statements: [{
+                effect: 'allow',
+                action: 'all',
+                principal: '*',
+              }]
+            }
+          });
+          
+          if (policyError) {
+            results.push({ bucket: bucketName, success: true, created: true, policyError: policyError.message });
+          } else {
+            results.push({ bucket: bucketName, success: true, created: true, policy: 'created' });
+          }
         }
       } else {
         results.push({ bucket: bucketName, success: true, exists: true });
@@ -66,13 +83,27 @@ serve(async (req) => {
     // Return success response
     return new Response(
       JSON.stringify({ success: true, results }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
   } catch (error) {
+    console.error("Storage initialization error:", error);
+    
     // Return error response
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
   }
 });

@@ -25,6 +25,7 @@ export const useCommunityCreation = () => {
       }
 
       try {
+        // Insert the community with the current user as creator
         const { data, error } = await supabase
           .from('communities')
           .insert({
@@ -39,7 +40,12 @@ export const useCommunityCreation = () => {
           .single();
 
         if (error) {
-          throw error;
+          console.error('Error creating community:', error);
+          throw new Error(`Failed to create community: ${error.message}`);
+        }
+
+        if (!data) {
+          throw new Error('No data returned from community creation');
         }
 
         // Also add the creator as an admin member
@@ -52,7 +58,8 @@ export const useCommunityCreation = () => {
           });
 
         if (memberError) {
-          throw memberError;
+          console.error('Error adding creator as admin:', memberError);
+          throw new Error(`Failed to add creator as admin: ${memberError.message}`);
         }
 
         return data;
