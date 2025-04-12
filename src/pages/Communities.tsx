@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, UserPlus } from 'lucide-react';
@@ -30,9 +29,7 @@ const Communities = () => {
   });
 
   const handleCreateCommunity = () => {
-    // Navigate to community creation page or open a modal
-    // For now we'll just show a placeholder
-    console.log("Create community clicked");
+    navigate('/register-community');
   };
 
   // Helper function to get member count safely
