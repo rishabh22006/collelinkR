@@ -14,45 +14,6 @@ export const STORAGE_BUCKETS = {
 };
 
 /**
- * Ensures that all required storage buckets exist
- */
-export const ensureStorageBuckets = async () => {
-  try {
-    // Create the public bucket if it doesn't exist
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('Error listing storage buckets:', bucketsError);
-      return false;
-    }
-    
-    // Check if each bucket exists, create if not
-    const bucketNames = Object.values(STORAGE_BUCKETS);
-    const existingBuckets = new Set(buckets?.map(bucket => bucket.name) || []);
-    
-    for (const bucketName of bucketNames) {
-      if (!existingBuckets.has(bucketName)) {
-        console.log(`Creating bucket: ${bucketName}`);
-        const { error: createError } = await supabase.storage.createBucket(bucketName, {
-          public: true, // Make buckets public so files can be accessed without authentication
-        });
-        
-        if (createError) {
-          console.error(`Error creating bucket ${bucketName}:`, createError);
-          return false;
-        }
-      }
-    }
-    
-    console.log('✅ Storage buckets checked/created');
-    return true;
-  } catch (error) {
-    console.error('Error ensuring storage buckets:', error);
-    return false;
-  }
-};
-
-/**
  * Helper function to get a public URL for a file in a specific bucket
  */
 export const getPublicUrl = (bucketName: string, filePath: string) => {
@@ -95,13 +56,39 @@ export const uploadFile = async (bucketName: string, file: File): Promise<string
 
 /**
  * Initialize storage when the app starts
+ * Instead of trying to create buckets from the client (which fails due to RLS),
+ * we'll just check if we can access the buckets and provide appropriate feedback
  */
 export const initializeStorage = async () => {
-  const result = await ensureStorageBuckets();
-  if (!result) {
-    toast.error("Failed to initialize storage", {
-      description: "Some features may not work correctly. Please refresh the page or try again later.",
-    });
+  try {
+    // Just list buckets to check access - we won't try to create them from client
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      console.warn('Storage initialization check failed:', error);
+      // Don't show toast for this - it's just a check, not critical for user experience
+      return false;
+    }
+    
+    const bucketNames = Object.values(STORAGE_BUCKETS);
+    const existingBuckets = new Set(buckets?.map(bucket => bucket.name) || []);
+    
+    // Log which buckets exist for debugging
+    console.log('Available storage buckets:', existingBuckets);
+    console.log('Required buckets:', bucketNames);
+    
+    // Just check if buckets exist, don't try to create them
+    const missingBuckets = bucketNames.filter(name => !existingBuckets.has(name));
+    
+    if (missingBuckets.length > 0) {
+      console.warn('Some required storage buckets are missing:', missingBuckets);
+      return false;
+    }
+    
+    console.log('✅ Storage buckets check completed');
+    return true;
+  } catch (error) {
+    console.error('Error checking storage buckets:', error);
+    return false;
   }
-  return result;
 };
