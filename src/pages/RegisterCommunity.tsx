@@ -24,7 +24,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/integrations/supabase/client';
+import { uploadFile, STORAGE_BUCKETS } from '@/utils/setupStorage';
+import { useCommunities } from '@/hooks/useCommunities';
 
 const formSchema = z.object({
   name: z.string().min(3, {
@@ -42,6 +43,7 @@ const formSchema = z.object({
 const RegisterCommunity = () => {
   const { profile } = useAuthStore();
   const navigate = useNavigate();
+  const { createCommunity } = useCommunities();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -61,6 +63,12 @@ const RegisterCommunity = () => {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File too large", {
+          description: "Logo image must be less than 5MB",
+        });
+        return;
+      }
       setLogoFile(file);
       
       // Create a preview
@@ -75,6 +83,12 @@ const RegisterCommunity = () => {
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File too large", {
+          description: "Banner image must be less than 10MB",
+        });
+        return;
+      }
       setBannerFile(file);
       
       // Create a preview
@@ -99,73 +113,36 @@ const RegisterCommunity = () => {
       // Upload logo if available
       let logoUrl = null;
       if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `community-logos/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('public')
-          .upload(filePath, logoFile);
-          
-        if (uploadError) throw uploadError;
-        
-        const { data } = supabase.storage.from('public').getPublicUrl(filePath);
-        logoUrl = data.publicUrl;
+        logoUrl = await uploadFile(STORAGE_BUCKETS.COMMUNITY_LOGOS, logoFile);
+        if (!logoUrl) {
+          throw new Error("Failed to upload logo");
+        }
       }
 
       // Upload banner if available
       let bannerUrl = null;
       if (bannerFile) {
-        const fileExt = bannerFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `community-banners/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('public')
-          .upload(filePath, bannerFile);
-          
-        if (uploadError) throw uploadError;
-        
-        const { data } = supabase.storage.from('public').getPublicUrl(filePath);
-        bannerUrl = data.publicUrl;
+        bannerUrl = await uploadFile(STORAGE_BUCKETS.COMMUNITY_BANNERS, bannerFile);
+        if (!bannerUrl) {
+          throw new Error("Failed to upload banner");
+        }
       }
       
-      // Create community in database
-      const { data, error } = await supabase
-        .from('communities')
-        .insert({
-          name: values.name,
-          description: values.description,
-          creator_id: profile.id,
-          logo_url: logoUrl,
-          banner_url: bannerUrl,
-          is_private: values.isPrivate
-        })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      // Add creator as admin
-      if (data) {
-        await supabase
-          .from('community_members')
-          .insert({
-            community_id: data.id,
-            member_id: profile.id,
-            role: 'admin'
-          });
-      }
-      
-      toast.success("Community created successfully!", {
-        description: "Your community is now available.",
+      // Create community using the hook
+      await createCommunity.mutateAsync({
+        name: values.name,
+        description: values.description,
+        logo_url: logoUrl,
+        banner_url: bannerUrl,
+        is_private: values.isPrivate
       });
       
+      toast.success("Community created successfully!");
       navigate('/communities');
     } catch (error) {
       console.error('Error creating community:', error);
       toast.error("Failed to create community", {
-        description: "Please try again later.",
+        description: error instanceof Error ? error.message : "Please try again later.",
       });
     } finally {
       setIsSubmitting(false);
@@ -195,7 +172,7 @@ const RegisterCommunity = () => {
             <h1 className="text-2xl font-bold">Create a Community</h1>
           </div>
           
-          <div className="bg-card rounded-lg border p-6 shadow-sm">
+          <div className="bg-card rounded-xl border p-6 shadow-md">
             <div className="flex items-center gap-4 mb-6">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Users className="h-6 w-6 text-primary" />
@@ -365,10 +342,10 @@ const RegisterCommunity = () => {
                 <div className="bg-secondary/20 rounded-lg p-4 flex items-start gap-3">
                   <Info className="h-5 w-5 text-primary mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium mb-1">Community Guidelines</p>
+                    <p className="font-medium mb-1">Community Creation</p>
                     <p className="text-muted-foreground">
-                      By creating a community, you agree to maintain a respectful environment for all members
-                      and follow our platform's community guidelines.
+                      Your community will be created immediately and you'll be automatically
+                      assigned as the admin. You can invite members after creation.
                     </p>
                   </div>
                 </div>

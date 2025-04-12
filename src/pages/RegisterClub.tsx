@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Upload, CheckCircle2, Building, Users, Calendar, Info } from 'lucide-react';
+import { ArrowLeft, Upload, Building, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,7 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/integrations/supabase/client';
+import { uploadFile, STORAGE_BUCKETS } from '@/utils/setupStorage';
+import { useClubs } from '@/hooks/useClubs';
 
 const formSchema = z.object({
   clubName: z.string().min(3, {
@@ -45,6 +46,7 @@ const formSchema = z.object({
 const RegisterClub = () => {
   const { profile } = useAuthStore();
   const navigate = useNavigate();
+  const { createClub } = useClubs();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -65,6 +67,12 @@ const RegisterClub = () => {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File too large", {
+          description: "Logo image must be less than 5MB",
+        });
+        return;
+      }
       setLogoFile(file);
       
       // Create a preview
@@ -79,6 +87,12 @@ const RegisterClub = () => {
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File too large", {
+          description: "Banner image must be less than 10MB",
+        });
+        return;
+      }
       setBannerFile(file);
       
       // Create a preview
@@ -103,80 +117,36 @@ const RegisterClub = () => {
       // Upload logo if available
       let logoUrl = null;
       if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `club-logos/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('public')
-          .upload(filePath, logoFile);
-          
-        if (uploadError) throw uploadError;
-        
-        const { data } = supabase.storage.from('public').getPublicUrl(filePath);
-        logoUrl = data.publicUrl;
+        logoUrl = await uploadFile(STORAGE_BUCKETS.CLUB_LOGOS, logoFile);
+        if (!logoUrl) {
+          throw new Error("Failed to upload logo");
+        }
       }
 
       // Upload banner if available
       let bannerUrl = null;
       if (bannerFile) {
-        const fileExt = bannerFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `club-banners/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('public')
-          .upload(filePath, bannerFile);
-          
-        if (uploadError) throw uploadError;
-        
-        const { data } = supabase.storage.from('public').getPublicUrl(filePath);
-        bannerUrl = data.publicUrl;
+        bannerUrl = await uploadFile(STORAGE_BUCKETS.CLUB_BANNERS, bannerFile);
+        if (!bannerUrl) {
+          throw new Error("Failed to upload banner");
+        }
       }
       
-      // Create club in database
-      const { data, error } = await supabase
-        .from('clubs')
-        .insert({
-          name: values.clubName,
-          description: values.description,
-          creator_id: profile.id,
-          logo_url: logoUrl,
-          banner_url: bannerUrl,
-          institution: "MIT ADT University"
-        })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      // Add creator as admin
-      if (data) {
-        await supabase
-          .from('club_admins')
-          .insert({
-            club_id: data.id,
-            user_id: profile.id
-          });
-
-        // Also add creator as member
-        await supabase
-          .from('club_members')
-          .insert({
-            club_id: data.id,
-            user_id: profile.id
-          });
-      }
-      
-      toast.success("Club registered successfully!", {
-        description: "Your club has been submitted for approval.",
+      // Create club using the hook
+      await createClub.mutateAsync({
+        name: values.clubName,
+        description: values.description,
+        institution: "MIT ADT University", // Default institution
+        logo_url: logoUrl,
+        banner_url: bannerUrl,
       });
       
+      toast.success("Club registered successfully!");
       navigate('/clubs');
     } catch (error) {
       console.error('Error registering club:', error);
       toast.error("Failed to register club", {
-        description: "Please try again later.",
+        description: error instanceof Error ? error.message : "Please try again later.",
       });
     } finally {
       setIsSubmitting(false);
@@ -206,7 +176,7 @@ const RegisterClub = () => {
             <h1 className="text-2xl font-bold">Register a Club</h1>
           </div>
           
-          <div className="bg-card rounded-lg border p-6 shadow-sm">
+          <div className="bg-card rounded-xl border p-6 shadow-md">
             <div className="flex items-center gap-4 mb-6">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Building className="h-6 w-6 text-primary" />
@@ -385,10 +355,10 @@ const RegisterClub = () => {
                 <div className="bg-secondary/20 rounded-lg p-4 flex items-start gap-3">
                   <Info className="h-5 w-5 text-primary mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium mb-1">Approval Process</p>
+                    <p className="font-medium mb-1">Registration Confirmation</p>
                     <p className="text-muted-foreground">
-                      All club registrations are reviewed by university administration.
-                      You'll receive an email once your club is approved.
+                      Your club will be immediately registered and visible in the clubs directory.
+                      You'll be able to manage it from your dashboard.
                     </p>
                   </div>
                 </div>
@@ -398,7 +368,7 @@ const RegisterClub = () => {
                   className="w-full" 
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Submitting..." : "Register Club"}
+                  {isSubmitting ? "Registering Club..." : "Register Club"}
                 </Button>
               </form>
             </Form>
