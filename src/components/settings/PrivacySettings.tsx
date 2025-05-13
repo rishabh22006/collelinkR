@@ -1,28 +1,34 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Shield, Save } from 'lucide-react';
+import { Shield, Save, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { useUserSettings } from '@/hooks/useUserSettings';
 
 const PrivacySettings: React.FC = () => {
-  const [showEmail, setShowEmail] = useState(true);
-  const [showActivity, setShowActivity] = useState(true);
-  const [showInstitution, setShowInstitution] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const { settings, updatePrivacySettings } = useUserSettings();
+  
+  const [showEmail, setShowEmail] = React.useState(settings?.privacy?.showEmail ?? true);
+  const [showActivity, setShowActivity] = React.useState(settings?.privacy?.showActivity ?? true);
+  const [showInstitution, setShowInstitution] = React.useState(settings?.privacy?.showInstitution ?? true);
+  
+  React.useEffect(() => {
+    if (settings?.privacy) {
+      setShowEmail(settings.privacy.showEmail);
+      setShowActivity(settings.privacy.showActivity);
+      setShowInstitution(settings.privacy.showInstitution);
+    }
+  }, [settings]);
   
   const handlePrivacySettings = () => {
-    setIsSaving(true);
-    
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      // In a real app, this would update privacy settings in the database
-      toast.success('Privacy settings updated');
-      setIsSaving(false);
-    }, 800);
+    updatePrivacySettings.mutate({
+      showEmail,
+      showActivity,
+      showInstitution
+    });
   };
   
   return (
@@ -44,7 +50,7 @@ const PrivacySettings: React.FC = () => {
           <Switch 
             checked={showEmail}
             onCheckedChange={setShowEmail}
-            disabled={isSaving}
+            disabled={updatePrivacySettings.isPending}
           />
         </div>
         
@@ -60,7 +66,7 @@ const PrivacySettings: React.FC = () => {
           <Switch 
             checked={showActivity}
             onCheckedChange={setShowActivity}
-            disabled={isSaving}
+            disabled={updatePrivacySettings.isPending}
           />
         </div>
         
@@ -76,15 +82,18 @@ const PrivacySettings: React.FC = () => {
           <Switch 
             checked={showInstitution}
             onCheckedChange={setShowInstitution}
-            disabled={isSaving}
+            disabled={updatePrivacySettings.isPending}
           />
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handlePrivacySettings} disabled={isSaving}>
-          {isSaving ? (
+        <Button 
+          onClick={handlePrivacySettings} 
+          disabled={updatePrivacySettings.isPending}
+        >
+          {updatePrivacySettings.isPending ? (
             <>
-              <Save size={16} className="mr-2 animate-spin" />
+              <Loader2 size={16} className="mr-2 animate-spin" />
               Saving...
             </>
           ) : (

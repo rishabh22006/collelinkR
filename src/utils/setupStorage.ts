@@ -1,44 +1,51 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Define storage bucket constants
-export const STORAGE_BUCKETS = {
-  PUBLIC: 'public',
-};
-
 /**
- * Check if all required storage buckets exist
- * @returns {Promise<boolean>} True if all buckets exist, false otherwise
+ * Simple check if the storage bucket exists
+ * This function doesn't try to create buckets anymore as that's handled by the edge function
  */
-export const initializeStorage = async (): Promise<boolean> => {
+export const checkStorageBucket = async (bucketName: string): Promise<boolean> => {
   try {
-    // Get list of all buckets
-    const { data: buckets, error } = await supabase.storage.listBuckets();
+    const { data, error } = await supabase.storage.getBucket(bucketName);
     
     if (error) {
-      console.error('Error listing storage buckets:', error);
+      console.error(`Bucket ${bucketName} check error:`, error.message);
       return false;
     }
     
-    // Create a set of existing bucket names
-    const existingBuckets = new Set(buckets?.map(bucket => bucket.name) || []);
-    console.info('Available storage buckets:', existingBuckets);
-    
-    // Define required buckets
-    const requiredBuckets = Object.values(STORAGE_BUCKETS);
-    console.info('Required buckets:', requiredBuckets);
-    
-    // Check if all required buckets exist
-    const missingBuckets = requiredBuckets.filter(bucket => !existingBuckets.has(bucket));
-    
-    if (missingBuckets.length > 0) {
-      console.warn('Some required storage buckets are missing:', missingBuckets);
-      return false; // Indicate that client-side initialization failed
-    }
-    
-    return true; // All required buckets exist
-  } catch (err) {
-    console.error('Error initializing storage:', err);
+    return true;
+  } catch (error) {
+    console.error(`Error checking bucket ${bucketName}:`, error);
     return false;
   }
 };
+
+/**
+ * Setup function that runs at app startup to ensure required storage buckets exist
+ * This is a simplified version that just logs the results
+ */
+export const setupStorage = async (): Promise<void> => {
+  console.log('Checking storage buckets...');
+  
+  try {
+    // Check the existence of required buckets
+    const profilesExists = await checkStorageBucket('profiles');
+    const eventsExists = await checkStorageBucket('events');
+    const clubsExists = await checkStorageBucket('clubs');
+    const communitiesExists = await checkStorageBucket('communities');
+    const certificatesExists = await checkStorageBucket('certificates');
+    
+    console.log(`Storage buckets status:
+      - profiles: ${profilesExists ? 'exists' : 'missing'}
+      - events: ${eventsExists ? 'exists' : 'missing'}
+      - clubs: ${clubsExists ? 'exists' : 'missing'}
+      - communities: ${communitiesExists ? 'exists' : 'missing'}
+      - certificates: ${certificatesExists ? 'exists' : 'missing'}
+    `);
+  } catch (error) {
+    console.error('Error during storage setup:', error);
+  }
+};
+
+export default setupStorage;
